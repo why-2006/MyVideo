@@ -1,5 +1,5 @@
 <template>
-  <a-layout>
+  <a-layout style="height: 100vh; min-height: 100vh">
     <a-layout-header class="header">
       <div class="logo" />
       <a-menu
@@ -59,7 +59,7 @@
           </a-sub-menu>
         </a-menu>
       </a-layout-sider>
-      <a-layout style="padding: 0 24px 24px">
+      <a-layout style="padding: 0 24px 24px; height: 100%">
         <a-breadcrumb style="margin: 16px 0">
           <a-breadcrumb-item>Home</a-breadcrumb-item>
           <a-breadcrumb-item>List</a-breadcrumb-item>
@@ -71,6 +71,9 @@
             padding: '24px',
             margin: 0,
             minHeight: '280px',
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
           }"
         >
           Content
