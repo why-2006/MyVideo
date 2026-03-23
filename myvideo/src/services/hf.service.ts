@@ -1,76 +1,90 @@
-import apiClient from "./api";
-import type { HFModel, HFInferenceResponse } from "@/types/api";
+import axios from "axios";
+import type {
+  HuggingFaceService,
+  HFModel,
+  HFInferenceResponse,
+} from "@/types/api";
 
-export class HuggingFaceService {
-  /**
-   * 获取模型列表
-   */
-  async listModels(params?: {
-    limit?: number;
-    offset?: number;
-    search?: string;
-    sort?: string;
-  }): Promise<HFModel[]> {
-    const response = await apiClient.get<{ data: HFModel[] }>("/models", {
-      params,
-    });
-    return response.data.data;
-  }
+export const huggingFaceService: HuggingFaceService = {
+  async listModels(params = { limit: 10 }) {
+    try {
+      const response = await axios.get("https://huggingface.co/api/models", {
+        params: {
+          limit: params.limit,
+          sort: "downloads",
+        },
+      });
 
-  /**
-   * 获取模型详情
-   */
-  async getModel(modelId: string): Promise<HFModel> {
-    const response = await apiClient.get<{ data: HFModel }>(
-      `/models/${modelId}`,
-    );
-    return response.data.data;
-  }
+      return response.data.map((model: any) => ({
+        id: model.id,
+        model_type: model.model_type,
+        pipeline_tag: model.pipeline_tag,
+        downloads: model.downloads,
+        likes: model.likes,
+      })) as HFModel[];
+    } catch (error) {
+      console.error("Failed to fetch models:", error);
+      throw new Error("Failed to fetch models from Hugging Face");
+    }
+  },
 
-  /**
-   * 文本推理
-   */
-  async textInference(
-    modelId: string,
-    inputs: string,
-    parameters?: any,
-  ): Promise<HFInferenceResponse> {
-    const response = await apiClient.post<{ data: HFInferenceResponse }>(
-      `/inference/text/${modelId}`,
-      { inputs, parameters },
-    );
-    return response.data.data;
-  }
+  async textInference(modelId: string, inputs: string) {
+    try {
+      const response = await axios.post(
+        `https://api-inference.huggingface.co/models/${modelId}`,
+        { inputs },
+        {
+          headers: {
+            Authorization: `Bearer ${import.meta.env.VITE_HF_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
 
-  /**
-   * 图像推理
-   */
-  async imageInference(
-    modelId: string,
-    inputs?: string,
-    parameters?: any,
-  ): Promise<HFInferenceResponse> {
-    const response = await apiClient.post<{ data: HFInferenceResponse }>(
-      `/inference/image/${modelId}`,
-      { inputs, parameters },
-    );
-    return response.data.data;
-  }
+      return response.data as HFInferenceResponse;
+    } catch (error) {
+      console.error("Text inference failed:", error);
+      throw new Error("Failed to run text inference");
+    }
+  },
 
-  /**
-   * 音频推理
-   */
-  async audioInference(
-    modelId: string,
-    inputs?: string,
-    parameters?: any,
-  ): Promise<HFInferenceResponse> {
-    const response = await apiClient.post<{ data: HFInferenceResponse }>(
-      `/inference/audio/${modelId}`,
-      { inputs, parameters },
-    );
-    return response.data.data;
-  }
-}
+  async imageInference(modelId: string, inputs: string) {
+    try {
+      const response = await axios.post(
+        `https://api-inference.huggingface.co/models/${modelId}`,
+        { inputs },
+        {
+          headers: {
+            Authorization: `Bearer ${import.meta.env.VITE_HF_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
 
-export const huggingFaceService = new HuggingFaceService();
+      return response.data as HFInferenceResponse;
+    } catch (error) {
+      console.error("Image inference failed:", error);
+      throw new Error("Failed to run image inference");
+    }
+  },
+
+  async audioInference(modelId: string, inputs: string) {
+    try {
+      const response = await axios.post(
+        `https://api-inference.huggingface.co/models/${modelId}`,
+        { inputs },
+        {
+          headers: {
+            Authorization: `Bearer ${import.meta.env.VITE_HF_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      return response.data as HFInferenceResponse;
+    } catch (error) {
+      console.error("Audio inference failed:", error);
+      throw new Error("Failed to run audio inference");
+    }
+  },
+};

@@ -3,7 +3,7 @@
     <a-card title="User Center" :loading="loading">
       <a-descriptions :column="2" bordered>
         <a-descriptions-item label="User ID">
-          {{ userStore.profile?.userId || 'N/A' }}
+          {{ userStore.profile?.id || 'N/A' }}
         </a-descriptions-item>
         <a-descriptions-item label="Name">
           {{ userStore.profile?.name || 'N/A' }}

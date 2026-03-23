@@ -1,63 +1,41 @@
-import apiClient from './api';
-import type { TokenPayload } from '@/types/api';
+import axios from "axios";
+import type { AuthService, AuthResponse, TokenPayload } from "@/types/api";
 
-export interface LoginResponse {
-  user: TokenPayload;
-  accessToken: string;
-  refreshToken: string;
-}
+export const authService: AuthService = {
+  async login(email: string, password: string) {
+    try {
+      const response = await axios.post("/api/auth/login", {
+        email,
+        password,
+      });
 
-export interface RefreshResponse {
-  accessToken: string;
-  expiresIn: string;
-}
+      const { access_token, refresh_token, user } = response.data;
+      return {
+        accessToken: access_token,
+        refreshToken: refresh_token,
+        user: {
+          id: user.id,
+          email: user.email,
+          username: user.username,
+          name: user.name,
+        } as TokenPayload,
+      } as AuthResponse;
+    } catch (error: any) {
+      console.error("Login failed:", error);
+      throw new Error(error.response?.data?.message || "Login failed");
+    }
+  },
 
-export class AuthService {
-  /**
-   * 用户登录
-   */
-  async login(email: string, password: string): Promise<LoginResponse> {
-    const response = await apiClient.post<{ data: LoginResponse }>('/auth/login', { email, password });
-    return response.data.data;
-  }
+  logout() {
+    axios.post("/api/auth/logout");
+  },
 
-  /**
-   * 刷新 token
-   */
-  async refresh(refreshToken: string): Promise<RefreshResponse> {
-    const response = await apiClient.post<{ data: RefreshResponse }>('/auth/refresh', { refreshToken });
-    return response.data.data;
-  }
-
-  /**
-   * 登出
-   */
-  logout(): void {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-  }
-
-  /**
-   * 检查是否已登录
-   */
-  isAuthenticated(): boolean {
-    return !!localStorage.getItem('access_token');
-  }
-
-  /**
-   * 获取 access token
-   */
-  getAccessToken(): string | null {
-    return localStorage.getItem('access_token');
-  }
-
-  /**
-   * 设置 tokens
-   */
-  setTokens(accessToken: string, refreshToken: string): void {
-    localStorage.setItem('access_token', accessToken);
-    localStorage.setItem('refresh_token', refreshToken);
-  }
-}
-
-export const authService = new AuthService();
+  async refreshToken() {
+    try {
+      const response = await axios.post("/api/auth/refresh");
+      return response.data.access_token;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || "Token refresh failed");
+    }
+  },
+};
