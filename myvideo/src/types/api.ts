@@ -51,6 +51,7 @@ export interface HuggingFaceService {
 
 export interface AuthService {
   login: (email: string, password: string) => Promise<AuthResponse>;
+  register: (email: string, password: string, username: string, name: string) => Promise<AuthResponse>;
   logout: () => void;
   refreshToken: () => Promise<string>;
 }

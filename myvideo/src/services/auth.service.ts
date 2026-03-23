@@ -26,6 +26,32 @@ export const authService: AuthService = {
     }
   },
 
+  async register(email: string, password: string, username: string, name: string) {
+    try {
+      const response = await axios.post("/api/auth/register", {
+        email,
+        password,
+        username,
+        name,
+      });
+
+      const { access_token, refresh_token, user } = response.data;
+      return {
+        accessToken: access_token,
+        refreshToken: refresh_token,
+        user: {
+          id: user.id,
+          email: user.email,
+          username: user.username,
+          name: user.name,
+        } as TokenPayload,
+      } as AuthResponse;
+    } catch (error: any) {
+      console.error("Register failed:", error);
+      throw new Error(error.response?.data?.message || "Register failed");
+    }
+  },
+
   logout() {
     axios.post("/api/auth/logout");
   },

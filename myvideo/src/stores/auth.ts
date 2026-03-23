@@ -53,6 +53,22 @@ export const useAuthStore = defineStore("auth", () => {
     }
   };
 
+  const register = async (email: string, password: string, username: string, name: string) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const response = await authService.register(email, password, username, name);
+      setTokens(response.accessToken, response.refreshToken);
+      setUser(response.user);
+      return true;
+    } catch (err: any) {
+      error.value = err.message || "Register failed";
+      return false;
+    } finally {
+      loading.value = false;
+    }
+  };
+
   const logout = () => {
     clearAuth();
   };
@@ -69,6 +85,7 @@ export const useAuthStore = defineStore("auth", () => {
     setUser,
     clearAuth,
     login,
+    register,
     logout,
   };
 });

@@ -32,11 +32,7 @@ const siderMenuItems = ref<MenuItem[]>([
   { key: "3", label: "Option 3" },
 ]);
 
-const breadcrumbItems = ref<string[]>([
-  "Home",
-  "List",
-  "App",
-]);
+const breadcrumbItems = ref<string[]>([]);
 
 const handleHeaderMenuClick = (key: string) => {
   switch (key) {

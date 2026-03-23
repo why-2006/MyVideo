@@ -1,13 +1,27 @@
 <template>
   <a-layout style="height: 100vh; min-height: 100vh; background: #f0f2f5">
     <a-layout-content style="flex: 1; display: flex; align-items: center; justify-content: center">
-      <a-card style="width: 400px" title="Login">
-        <a-form :model="form" layout="vertical" @finish="handleLogin">
+      <a-card style="width: 400px" title="Register">
+        <a-form :model="form" layout="vertical" @finish="handleRegister">
           <a-form-item label="Email" name="email" required>
             <a-input
               v-model:value="form.email"
               placeholder="Enter your email"
               type="email"
+            />
+          </a-form-item>
+
+          <a-form-item label="Username" name="username" required>
+            <a-input
+              v-model:value="form.username"
+              placeholder="Enter your username"
+            />
+          </a-form-item>
+
+          <a-form-item label="Name" name="name" required>
+            <a-input
+              v-model:value="form.name"
+              placeholder="Enter your full name"
             />
           </a-form-item>
 
@@ -18,6 +32,13 @@
             />
           </a-form-item>
 
+          <a-form-item label="Confirm Password" name="confirmPassword" required>
+            <a-input-password
+              v-model:value="form.confirmPassword"
+              placeholder="Confirm your password"
+            />
+          </a-form-item>
+
           <a-form-item>
             <a-button
               type="primary"
@@ -25,7 +46,7 @@
               :loading="authStore.loading"
               block
             >
-              Login
+              Register
             </a-button>
           </a-form-item>
 
@@ -39,8 +60,8 @@
           />
 
           <div style="text-align: center; margin-top: 16px">
-            <span>Don't have an account? </span>
-            <router-link to="/register" style="color: #1890ff; cursor: pointer">Register</router-link>
+            <span>Already have an account? </span>
+            <router-link to="/login" style="color: #1890ff; cursor: pointer">Login</router-link>
           </div>
         </a-form>
       </a-card>
@@ -50,23 +71,35 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
+import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores';
 
 const router = useRouter();
-const route = useRoute();
 const authStore = useAuthStore();
 
 const form = ref({
-  email: 'user@example.com',
-  password: 'password123',
+  email: '',
+  username: '',
+  name: '',
+  password: '',
+  confirmPassword: '',
 });
 
-const handleLogin = async () => {
-  const success = await authStore.login(form.value.email, form.value.password);
+const handleRegister = async () => {
+  if (form.value.password !== form.value.confirmPassword) {
+    authStore.error = 'Passwords do not match';
+    return;
+  }
+
+  const success = await authStore.register(
+    form.value.email,
+    form.value.password,
+    form.value.username,
+    form.value.name
+  );
+
   if (success) {
-    const redirect = route.query.redirect as string;
-    router.push(redirect || '/hugging-face');
+    router.push('/hugging-face');
   }
 };
 </script>

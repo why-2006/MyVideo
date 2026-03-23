@@ -6,8 +6,8 @@
         v-model:selectedKeys="selectedKeys1"
         theme="dark"
         mode="horizontal"
-        :style="{ lineHeight: '64px' }"
-        @menu-item-click="(e) => $emit('header-menu-click', e.key)"
+        :style="{ lineHeight: '64px', flex: 1 }"
+        @select="(e) => $emit('header-menu-click', e.key)"
       >
         <a-menu-item 
           v-for="item in headerMenuItems" 
@@ -16,6 +16,11 @@
           {{ item.label }}
         </a-menu-item>
       </a-menu>
+      <div class="auth-buttons">
+        <router-link to="/login">
+          <a-button type="primary">登录</a-button>
+        </router-link>
+      </div>
     </a-layout-header>
     <a-layout>
       <a-layout-sider width="200" style="background: #fff" v-if="showSider">
@@ -23,7 +28,7 @@
           v-model:selectedKeys="selectedKeys2"
           mode="inline"
           :style="{ height: '100%', borderRight: 0 }"
-          @menu-item-click="(e) => $emit('sider-menu-click', e.key)"
+          @select="(e) => $emit('sider-menu-click', e.key)"
         >
           <a-menu-item 
             v-for="item in siderMenuItems" 
@@ -100,6 +105,20 @@ const selectedKeys2 = ref<string[]>([]);
 .header {
   background: #001529;
   padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.auth-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.auth-buttons a {
+  text-decoration: none;
+  color: inherit;
 }
 
 .logo {
