@@ -28,6 +28,75 @@ export const huggingFaceService: HuggingFaceService = {
     }
   },
 
+  async listTextModels(params = { limit: 10 }) {
+    try {
+      const response = await axios.get("https://huggingface.co/api/models", {
+        params: {
+          limit: params.limit,
+          sort: "downloads",
+          pipeline_tag: "text-generation",
+        },
+      });
+
+      return response.data.map((model: any) => ({
+        id: model.id,
+        model_type: model.model_type,
+        pipeline_tag: model.pipeline_tag,
+        downloads: model.downloads,
+        likes: model.likes,
+      })) as HFModel[];
+    } catch (error) {
+      console.error("Failed to fetch text models:", error);
+      throw new Error("Failed to fetch text models from Hugging Face");
+    }
+  },
+
+  async listAudioModels(params = { limit: 10 }) {
+    try {
+      const response = await axios.get("https://huggingface.co/api/models", {
+        params: {
+          limit: params.limit,
+          sort: "downloads",
+          pipeline_tag: "automatic-speech-recognition",
+        },
+      });
+
+      return response.data.map((model: any) => ({
+        id: model.id,
+        model_type: model.model_type,
+        pipeline_tag: model.pipeline_tag,
+        downloads: model.downloads,
+        likes: model.likes,
+      })) as HFModel[];
+    } catch (error) {
+      console.error("Failed to fetch audio models:", error);
+      throw new Error("Failed to fetch audio models from Hugging Face");
+    }
+  },
+
+  async listImageModels(params = { limit: 10 }) {
+    try {
+      const response = await axios.get("https://huggingface.co/api/models", {
+        params: {
+          limit: params.limit,
+          sort: "downloads",
+          pipeline_tag: "image-classification",
+        },
+      });
+
+      return response.data.map((model: any) => ({
+        id: model.id,
+        model_type: model.model_type,
+        pipeline_tag: model.pipeline_tag,
+        downloads: model.downloads,
+        likes: model.likes,
+      })) as HFModel[];
+    } catch (error) {
+      console.error("Failed to fetch image models:", error);
+      throw new Error("Failed to fetch image models from Hugging Face");
+    }
+  },
+
   async textInference(modelId: string, inputs: string) {
     try {
       const response = await axios.post(

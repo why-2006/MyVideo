@@ -41,6 +41,7 @@ declare module 'vue' {
     ASpace: typeof import('ant-design-vue/es')['Space']
     AStatistic: typeof import('ant-design-vue/es')['Statistic']
     ATextarea: typeof import('ant-design-vue/es')['Textarea']
+    AUpload: typeof import('ant-design-vue/es')['Upload']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
   }

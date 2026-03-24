@@ -29,6 +29,12 @@ export const useAuthStore = defineStore("auth", () => {
     user.value = userData;
   };
 
+  const updateUser = (updates: Partial<TokenPayload>) => {
+    if (user.value) {
+      user.value = { ...user.value, ...updates };
+    }
+  };
+
   const clearAuth = () => {
     accessToken.value = null;
     refreshToken.value = null;
@@ -53,11 +59,21 @@ export const useAuthStore = defineStore("auth", () => {
     }
   };
 
-  const register = async (email: string, password: string, username: string, name: string) => {
+  const register = async (
+    email: string,
+    password: string,
+    username: string,
+    name: string,
+  ) => {
     loading.value = true;
     error.value = null;
     try {
-      const response = await authService.register(email, password, username, name);
+      const response = await authService.register(
+        email,
+        password,
+        username,
+        name,
+      );
       setTokens(response.accessToken, response.refreshToken);
       setUser(response.user);
       return true;
@@ -83,6 +99,7 @@ export const useAuthStore = defineStore("auth", () => {
     isTokenValid,
     setTokens,
     setUser,
+    updateUser,
     clearAuth,
     login,
     register,

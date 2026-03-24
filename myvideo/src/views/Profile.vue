@@ -44,13 +44,15 @@
             <a-input-password v-model:value="passwordForm.newPassword" />
           </a-form-item>
           <a-form-item label="Confirm New Password">
-            <a-input-password
-              v-model:value="passwordForm.confirmPassword"
-            />
+            <a-input-password v-model:value="passwordForm.confirmPassword" />
           </a-form-item>
 
           <a-form-item>
-            <a-button type="primary" :loading="loading" @click="handleChangePassword">
+            <a-button
+              type="primary"
+              :loading="loading"
+              @click="handleChangePassword"
+            >
               Change Password
             </a-button>
           </a-form-item>
@@ -61,30 +63,37 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import { useAuthStore } from '@/stores/auth';
+import { ref } from "vue";
+import { useAuthStore } from "@/stores/auth";
+import { userApi } from "@/services/api";
 
 const authStore = useAuthStore();
 
 const loading = ref(false);
 const profileForm = ref({
-  name: authStore.user?.name || '',
-  email: authStore.user?.email || '',
+  name: authStore.user?.name || "",
+  email: authStore.user?.email || "",
 });
 
 const passwordForm = ref({
-  currentPassword: '',
-  newPassword: '',
-  confirmPassword: '',
+  currentPassword: "",
+  newPassword: "",
+  confirmPassword: "",
 });
 
 const handleUpdate = async () => {
   loading.value = true;
   try {
-    // TODO: 调用 API 更新用户资料
-    console.log('Update profile:', profileForm.value);
+    await userApi.updateProfile({
+      name: profileForm.value.name,
+      email: profileForm.value.email,
+    });
+    // 更新本地状态
+    authStore.updateUser({ name: profileForm.value.name });
+    alert("Profile updated successfully");
   } catch (error) {
-    console.error('Failed to update profile:', error);
+    console.error("Failed to update profile:", error);
+    alert("Failed to update profile. Please try again.");
   } finally {
     loading.value = false;
   }
@@ -92,17 +101,26 @@ const handleUpdate = async () => {
 
 const handleChangePassword = async () => {
   if (passwordForm.value.newPassword !== passwordForm.value.confirmPassword) {
-    alert('Passwords do not match');
+    alert("Passwords do not match");
     return;
   }
 
   loading.value = true;
   try {
-    // TODO: 调用 API 修改密码
-    console.log('Change password:', passwordForm.value);
-    alert('Password changed successfully');
+    await userApi.changePassword({
+      currentPassword: passwordForm.value.currentPassword,
+      newPassword: passwordForm.value.newPassword,
+    });
+    alert("Password changed successfully");
+    // 清空表单
+    passwordForm.value = {
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    };
   } catch (error) {
-    console.error('Failed to change password:', error);
+    console.error("Failed to change password:", error);
+    alert("Failed to change password. Please try again.");
   } finally {
     loading.value = false;
   }

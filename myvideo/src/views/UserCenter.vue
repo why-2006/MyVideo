@@ -3,16 +3,16 @@
     <a-card title="User Center" :loading="loading">
       <a-descriptions :column="2" bordered>
         <a-descriptions-item label="User ID">
-          {{ userStore.profile?.id || 'N/A' }}
+          {{ userStore.profile?.id || "N/A" }}
         </a-descriptions-item>
         <a-descriptions-item label="Name">
-          {{ userStore.profile?.name || 'N/A' }}
+          {{ userStore.profile?.name || "N/A" }}
         </a-descriptions-item>
         <a-descriptions-item label="Email">
-          {{ userStore.profile?.email || 'N/A' }}
+          {{ userStore.profile?.email || "N/A" }}
         </a-descriptions-item>
         <a-descriptions-item label="Member Since">
-          {{ userStore.profile?.createdAt || 'N/A' }}
+          {{ userStore.profile?.createdAt || "N/A" }}
         </a-descriptions-item>
       </a-descriptions>
 
@@ -40,7 +40,10 @@
       <a-list :data-source="favoriteModels" item-layout="horizontal">
         <template #renderItem="{ item }">
           <a-list-item>
-            <a-list-item-meta :title="item.name" :description="item.description" />
+            <a-list-item-meta
+              :title="item.name"
+              :description="item.description"
+            />
           </a-list-item>
         </template>
       </a-list>
@@ -49,18 +52,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { useAuthStore } from '@/stores/auth';
-import { useUserStore } from '@/stores/user';
+import { ref, onMounted } from "vue";
+import { useAuthStore } from "@/stores/auth";
+import { useUserStore } from "@/stores/user";
+import { userApi } from "@/services/api";
 
 const authStore = useAuthStore();
 const userStore = useUserStore();
 const loading = ref(false);
 
 const favoriteModels = ref([
-  { name: 'gpt2', description: 'Pre-trained language model from OpenAI' },
-  { name: 'bert-base-uncased', description: 'Bert model for English' },
-  { name: 'distilbert-base-uncased', description: 'Distilled BERT model' },
+  { name: "gpt2", description: "Pre-trained language model from OpenAI" },
+  { name: "bert-base-uncased", description: "Bert model for English" },
+  { name: "distilbert-base-uncased", description: "Distilled BERT model" },
 ]);
 
 const fetchProfile = async () => {
@@ -68,11 +72,18 @@ const fetchProfile = async () => {
 
   loading.value = true;
   try {
-    // TODO: 从 API 获取用户信息
-    // const response = await apiClient.get('/user/profile');
-    // userStore.setProfile(response.data.data);
+    const response = await userApi.getProfile();
+    userStore.setProfile(response.data);
   } catch (error) {
-    console.error('Failed to fetch profile:', error);
+    console.error("Failed to fetch profile:", error);
+    // 如果API不存在，使用模拟数据
+    userStore.setProfile({
+      id: authStore.user?.id || "1",
+      name: authStore.user?.name || "Test User",
+      email: authStore.user?.email || "user@example.com",
+      username: authStore.user?.username || "testuser",
+      createdAt: new Date().toISOString(),
+    });
   } finally {
     loading.value = false;
   }
@@ -80,7 +91,7 @@ const fetchProfile = async () => {
 
 onMounted(() => {
   if (!authStore.isAuthenticated) {
-    authStore.login('user@example.com', 'password123');
+    authStore.login("user@example.com", "password123");
   }
   fetchProfile();
 });

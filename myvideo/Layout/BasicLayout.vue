@@ -7,12 +7,9 @@
         theme="dark"
         mode="horizontal"
         :style="{ lineHeight: '64px', flex: 1 }"
-        @select="(e) => $emit('header-menu-click', e.key)"
+        @select="(e: any) => $emit('header-menu-click', e.key)"
       >
-        <a-menu-item 
-          v-for="item in headerMenuItems" 
-          :key="item.key"
-        >
+        <a-menu-item v-for="item in headerMenuItems" :key="item.key">
           {{ item.label }}
         </a-menu-item>
       </a-menu>
@@ -28,22 +25,16 @@
           v-model:selectedKeys="selectedKeys2"
           mode="inline"
           :style="{ height: '100%', borderRight: 0 }"
-          @select="(e) => $emit('sider-menu-click', e.key)"
+          @select="(e: any) => $emit('sider-menu-click', e.key)"
         >
-          <a-menu-item 
-            v-for="item in siderMenuItems" 
-            :key="item.key"
-          >
+          <a-menu-item v-for="item in siderMenuItems" :key="item.key">
             {{ item.label }}
           </a-menu-item>
         </a-menu>
       </a-layout-sider>
       <a-layout style="padding: 0 24px 24px; height: 100%">
         <a-breadcrumb style="margin: 16px 0" v-if="showBreadcrumb">
-          <a-breadcrumb-item 
-            v-for="item in breadcrumbItems" 
-            :key="item"
-          >
+          <a-breadcrumb-item v-for="item in breadcrumbItems" :key="item">
             {{ item }}
           </a-breadcrumb-item>
         </a-breadcrumb>
@@ -90,7 +81,7 @@ withDefaults(
     showBreadcrumb: true,
     selectedHeaderKey: "",
     selectedSiderKey: "",
-  }
+  },
 );
 
 defineEmits<{
