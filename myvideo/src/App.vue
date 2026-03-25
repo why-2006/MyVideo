@@ -2,7 +2,6 @@
   <BasicLayout
     :headerMenuItems="headerMenuItems"
     :siderMenuItems="siderMenuItems"
-    :breadcrumbItems="breadcrumbItems"
     @header-menu-click="handleHeaderMenuClick"
     @sider-menu-click="handleSiderMenuClick"
   >
@@ -32,7 +31,7 @@ const siderMenuItems = ref<MenuItem[]>([
   { key: "image", label: "图片输入" },
 ]);
 
-const breadcrumbItems = ref<string[]>([]);
+// const breadcrumbItems = ref<string[]>([]);
 
 const handleHeaderMenuClick = (key: string) => {
   switch (key) {

@@ -35,6 +35,9 @@ export interface HFInferenceResponse {
 
 export interface HuggingFaceService {
   listModels: (params?: { limit?: number }) => Promise<HFModel[]>;
+  listTextModels: (params?: { limit?: number }) => Promise<HFModel[]>;
+  listAudioModels: (params?: { limit?: number }) => Promise<HFModel[]>;
+  listImageModels: (params?: { limit?: number }) => Promise<HFModel[]>;
   textInference: (
     modelId: string,
     inputs: string,
@@ -51,7 +54,12 @@ export interface HuggingFaceService {
 
 export interface AuthService {
   login: (email: string, password: string) => Promise<AuthResponse>;
-  register: (email: string, password: string, username: string, name: string) => Promise<AuthResponse>;
+  register: (
+    email: string,
+    password: string,
+    username: string,
+    name: string,
+  ) => Promise<AuthResponse>;
   logout: () => void;
   refreshToken: () => Promise<string>;
 }

@@ -33,11 +33,6 @@
         </a-menu>
       </a-layout-sider>
       <a-layout style="padding: 0 24px 24px; height: 100%">
-        <a-breadcrumb style="margin: 16px 0" v-if="showBreadcrumb">
-          <a-breadcrumb-item v-for="item in breadcrumbItems" :key="item">
-            {{ item }}
-          </a-breadcrumb-item>
-        </a-breadcrumb>
         <a-layout-content
           :style="{
             background: '#fff',
@@ -69,7 +64,6 @@ withDefaults(
     siderMenuItems?: MenuItem[];
     breadcrumbItems?: string[];
     showSider?: boolean;
-    showBreadcrumb?: boolean;
     selectedHeaderKey?: string;
     selectedSiderKey?: string;
   }>(),
@@ -78,7 +72,6 @@ withDefaults(
     siderMenuItems: () => [],
     breadcrumbItems: () => ["Home", "List", "App"],
     showSider: true,
-    showBreadcrumb: true,
     selectedHeaderKey: "",
     selectedSiderKey: "",
   },
