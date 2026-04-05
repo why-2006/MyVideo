@@ -1,112 +1,275 @@
-import axios, { AxiosInstance } from 'axios';
-import { config } from '../config';
+import axios from "axios";
+import https from "https";
+import type { AxiosProxyConfig } from "axios";
+import { config } from "../config";
 import type {
   HFModel,
   HFInferenceResponse,
   HFTextInferenceResponse,
   HFImageInferenceResponse,
   HFAudioInferenceResponse,
-  ListModelsParams,
-  HFClientError,
-} from '../types/hf';
+} from "../types/hf";
 
-const DEFAULT_TIMEOUT = 60000; // 60秒
-const MAX_RETRIES = 3;
-const RETRY_DELAY_MS = 1000;
+const TEXT_MODEL: HFModel = {
+  id: "katanemo/Arch-Router-1.5B:hf-inference",
+  model_type: "causal-lm",
+  pipeline_tag: "text-generation",
+  likes: 0,
+  downloads: 0,
+  tags: [],
+  library: "",
+  sha: "",
+  cardData: {
+    language: ["en"],
+    license: "",
+  },
+};
+
+const AUDIO_MODEL: HFModel = {
+  id: "openai/whisper-large-v3",
+  model_type: "automatic-speech-recognition",
+  pipeline_tag: "automatic-speech-recognition",
+  likes: 0,
+  downloads: 0,
+  tags: [],
+  library: "",
+  sha: "",
+  cardData: {
+    language: ["en"],
+    license: "",
+  },
+};
+
+const IMAGE_MODEL: HFModel = {
+  id: "google/vit-base-patch16-224",
+  model_type: "image-classification",
+  pipeline_tag: "image-classification",
+  likes: 0,
+  downloads: 0,
+  tags: [],
+  library: "",
+  sha: "",
+  cardData: {
+    language: ["en"],
+    license: "",
+  },
+};
+
+const STATIC_MODELS: HFModel[] = [TEXT_MODEL, AUDIO_MODEL, IMAGE_MODEL];
+
+const SUPPORTED_MODEL_IDS = new Set(STATIC_MODELS.map((model) => model.id));
 
 export class HuggingFaceService {
-  private client: AxiosInstance;
+  private readonly httpsAgent = new https.Agent({ family: 4, keepAlive: true });
 
-  constructor() {
-    this.client = axios.create({
-      baseURL: config.huggingFace.apiUrl,
-      headers: {
-        Authorization: `Bearer ${config.huggingFace.apiKey}`,
-      },
-      timeout: DEFAULT_TIMEOUT,
-    });
+  private shouldBypassProxy(hostname: string): boolean {
+    if (!config.huggingFace.noProxy.trim()) {
+      return false;
+    }
 
-    // 错误处理
-    this.client.interceptors.response.use(
-      (response) => response,
-      async (error) => {
-        return this.handleAxiosError(error);
+    const rules = config.huggingFace.noProxy
+      .split(",")
+      .map((rule) => rule.trim().toLowerCase())
+      .filter(Boolean);
+
+    const host = hostname.toLowerCase();
+    return rules.some((rule) => {
+      if (rule === "*") {
+        return true;
       }
-    );
+      if (rule.startsWith(".")) {
+        return host.endsWith(rule);
+      }
+      return host === rule || host.endsWith(`.${rule}`);
+    });
   }
 
-  private async handleAxiosError(error: any): Promise<never> {
-    if (error.response) {
-      // 服务器返回错误响应
-      const { status, data } = error.response;
-      throw new Error(data.error || data.detail || `HTTP ${status}: ${error.message}`);
-    } else if (error.request) {
-      // 请求已发送但没有收到响应
-      throw new Error('Network error: No response received from server');
-    } else {
-      // 请求配置错误
-      throw new Error(error.message || 'Unknown error occurred');
+  private resolveProxy(endpoint: string): AxiosProxyConfig | false | undefined {
+    const proxyUrl = config.huggingFace.proxyUrl.trim();
+    if (!proxyUrl) {
+      return undefined;
+    }
+
+    const targetHost = new URL(endpoint).hostname;
+    if (this.shouldBypassProxy(targetHost)) {
+      return false;
+    }
+
+    const parsed = new URL(proxyUrl);
+    const protocol = parsed.protocol.replace(":", "").toLowerCase();
+
+    return {
+      protocol,
+      host: parsed.hostname,
+      port: parsed.port ? Number(parsed.port) : protocol === "https" ? 443 : 80,
+      auth: parsed.username
+        ? {
+            username: decodeURIComponent(parsed.username),
+            password: decodeURIComponent(parsed.password),
+          }
+        : undefined,
+    };
+  }
+
+  constructor() {
+    this.ensureApiKey();
+  }
+
+  private handleInferenceError(error: any): never {
+    const timeoutMessage =
+      error?.code === "ETIMEDOUT" || error?.code === "ECONNABORTED"
+        ? `Connection to ${config.huggingFace.apiUrl} timed out`
+        : undefined;
+    const responseMessage =
+      error?.response?.data?.error ||
+      error?.response?.data?.message ||
+      error?.response?.statusText;
+    const message =
+      timeoutMessage ||
+      responseMessage ||
+      error?.message ||
+      error?.details?.message ||
+      "Hugging Face inference request failed";
+    const err = new Error(message);
+    (err as any).statusCode =
+      error?.response?.status || error?.statusCode || 502;
+    throw err;
+  }
+
+  private ensureApiKey(): void {
+    if (!config.huggingFace.apiKey || !config.huggingFace.apiKey.trim()) {
+      throw new Error(
+        "Missing Hugging Face API token. Set HF_API_TOKEN in backend/.env",
+      );
     }
   }
 
-  private async fetchWithRetry<T>(
-    url: string,
-    method: 'GET' | 'POST',
-    data?: any,
-    retries = MAX_RETRIES
-  ): Promise<T> {
-    try {
-      const config: any = {
-        method,
-        headers: {},
+  private decodeBinaryInput(
+    input: string | ArrayBuffer | Blob | Buffer | undefined,
+    explicitContentType?: string,
+  ): {
+    buffer: Buffer;
+    contentType?: string;
+  } {
+    if (!input) {
+      throw new Error("Binary input is required");
+    }
+
+    if (typeof input === "string") {
+      const contentTypeMatch = input.match(/^data:([^;]+);base64,/i);
+      const contentType = contentTypeMatch?.[1];
+      const base64 = input.includes(",") ? input.split(",")[1] : input;
+      const buffer = Buffer.from(base64, "base64");
+      return { buffer, contentType: explicitContentType || contentType };
+    }
+
+    if (input instanceof ArrayBuffer) {
+      return {
+        buffer: Buffer.from(input),
+        contentType: explicitContentType,
       };
+    }
 
-      if (data) {
-        config.data = data;
-      }
+    if (Buffer.isBuffer(input)) {
+      return {
+        buffer: input,
+        contentType: explicitContentType,
+      };
+    }
 
-      const response = await this.client.request<T>(config);
-      return response.data;
-    } catch (error) {
-      if (retries > 0 && this.isRetryableError(error)) {
-        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS * (MAX_RETRIES - retries + 1)));
-        return this.fetchWithRetry<T>(url, method, data, retries - 1);
-      }
+    throw new Error("Unsupported binary input type");
+  }
+
+  private assertValidModelId(modelId: string): void {
+    if (!SUPPORTED_MODEL_IDS.has(modelId)) {
+      const error = new Error(`Unsupported modelId: ${modelId}`);
+      (error as any).statusCode = 400;
       throw error;
     }
   }
 
-  private isRetryableError(error: any): boolean {
-    if (error.message && error.message.includes('503')) {
-      return true; // Model loading error
+  private async chatCompletion(
+    modelId: string,
+    userInput: string,
+    parameters?: Record<string, unknown>,
+  ): Promise<string> {
+    const endpoint = `${config.huggingFace.apiUrl.replace(/\/$/, "")}/v1/chat/completions`;
+    const proxy = this.resolveProxy(endpoint);
+    const payload: Record<string, unknown> = {
+      model: modelId,
+      messages: [{ role: "user", content: userInput }],
+      stream: false,
+    };
+
+    if (parameters && Object.keys(parameters).length > 0) {
+      Object.assign(payload, parameters);
     }
-    return false;
+
+    const response = await axios.post(endpoint, payload, {
+      headers: {
+        Authorization: `Bearer ${config.huggingFace.apiKey}`,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      httpsAgent: proxy === undefined ? this.httpsAgent : undefined,
+      proxy,
+      timeout: 60000,
+    });
+
+    const content = response?.data?.choices?.[0]?.message?.content;
+    if (typeof content !== "string") {
+      throw new Error(
+        "Invalid chat completion response from Hugging Face Router",
+      );
+    }
+
+    return content;
+  }
+
+  private async modelBinaryInference<T>(
+    modelId: string,
+    binaryInput: string | ArrayBuffer | Blob | Buffer | undefined,
+    explicitContentType?: string,
+  ): Promise<T> {
+    const endpoint = `${config.huggingFace.apiUrl.replace(/\/$/, "")}/hf-inference/models/${encodeURIComponent(modelId)}`;
+    const proxy = this.resolveProxy(endpoint);
+    const { buffer, contentType } = this.decodeBinaryInput(
+      binaryInput,
+      explicitContentType,
+    );
+
+    const response = await axios.post(endpoint, buffer, {
+      headers: {
+        Authorization: `Bearer ${config.huggingFace.apiKey}`,
+        Accept: "application/json",
+        "Content-Type": contentType || "application/octet-stream",
+      },
+      httpsAgent: proxy === undefined ? this.httpsAgent : undefined,
+      proxy,
+      timeout: 60000,
+    });
+
+    return response.data as T;
   }
 
   /**
    * 列出模型
    */
-  async listModels(params?: ListModelsParams): Promise<HFModel[]> {
-    const queryParams = new URLSearchParams();
-
-    if (params?.limit) queryParams.append('limit', params.limit.toString());
-    if (params?.offset) queryParams.append('offset', params.offset.toString());
-    if (params?.search) queryParams.append('search', params.search);
-    if (params?.sort) queryParams.append('sort', params.sort);
-
-    const url = `/models?${queryParams.toString()}`;
-    const data = await this.fetchWithRetry<HFModel[]>(url, 'GET');
-
-    return Array.isArray(data) ? data : [data];
+  async listModels(): Promise<HFModel[]> {
+    return STATIC_MODELS;
   }
 
   /**
    * 获取模型详情
    */
   async getModel(modelId: string): Promise<HFModel> {
-    const url = `/models/${modelId}`;
-    const data = await this.fetchWithRetry<HFModel>(url, 'GET');
-    return data;
+    const model = STATIC_MODELS.find((item) => item.id === modelId);
+
+    if (!model) {
+      throw new Error(`Model not found: ${modelId}`);
+    }
+
+    return model;
   }
 
   /**
@@ -115,11 +278,22 @@ export class HuggingFaceService {
   async textInference(
     modelId: string,
     inputs: string,
-    parameters?: any
+    parameters?: any,
   ): Promise<HFTextInferenceResponse> {
-    const url = `/${modelId}`;
-    const data = await this.fetchWithRetry<HFTextInferenceResponse>(url, 'POST', { inputs, parameters });
-    return data;
+    try {
+      this.assertValidModelId(modelId);
+      const generatedText = await this.chatCompletion(
+        modelId,
+        inputs,
+        parameters,
+      );
+
+      return {
+        generated_text: generatedText,
+      };
+    } catch (error) {
+      this.handleInferenceError(error);
+    }
   }
 
   /**
@@ -127,12 +301,30 @@ export class HuggingFaceService {
    */
   async imageInference(
     modelId: string,
-    inputs?: string,
-    parameters?: any
+    inputs?: string | ArrayBuffer | Blob | Buffer,
+    parameters?: any,
+    contentType?: string,
   ): Promise<HFImageInferenceResponse> {
-    const url = `/${modelId}`;
-    const data = await this.fetchWithRetry<HFImageInferenceResponse>(url, 'POST', { inputs, parameters });
-    return data;
+    try {
+      this.assertValidModelId(modelId);
+      const response = await this.modelBinaryInference<any>(
+        modelId,
+        inputs,
+        contentType,
+      );
+
+      if (Array.isArray(response)) {
+        return {
+          generated_image: JSON.stringify(response),
+        };
+      }
+
+      return {
+        generated_image: (response as any).label || JSON.stringify(response),
+      };
+    } catch (error) {
+      this.handleInferenceError(error);
+    }
   }
 
   /**
@@ -140,12 +332,27 @@ export class HuggingFaceService {
    */
   async audioInference(
     modelId: string,
-    inputs?: string,
-    parameters?: any
+    inputs?: string | ArrayBuffer | Blob | Buffer,
+    parameters?: any,
+    contentType?: string,
   ): Promise<HFAudioInferenceResponse> {
-    const url = `/${modelId}`;
-    const data = await this.fetchWithRetry<HFAudioInferenceResponse>(url, 'POST', { inputs, parameters });
-    return data;
+    try {
+      this.assertValidModelId(modelId);
+      const response = await this.modelBinaryInference<any>(
+        modelId,
+        inputs,
+        contentType,
+      );
+
+      return {
+        generated_audio:
+          typeof response === "object"
+            ? (response as any).text || JSON.stringify(response)
+            : String(response),
+      };
+    } catch (error) {
+      this.handleInferenceError(error);
+    }
   }
 }
 

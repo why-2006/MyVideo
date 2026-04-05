@@ -12,6 +12,22 @@ export const useHfStore = defineStore("hf", () => {
   const inferenceResults = ref<HFInferenceResponse[]>([]);
   const inferenceLoading = ref(false);
   const inferenceError = ref<string | null>(null);
+  const currentInferenceType = ref<"text" | "image" | "audio" | null>(null);
+
+  const syncSelectedModel = (nextModels: HFModel[]) => {
+    if (nextModels.length === 0) {
+      selectedModel.value = null;
+      return;
+    }
+
+    const currentId = selectedModel.value?.id;
+    const existsInCurrentList =
+      !!currentId && nextModels.some((model) => model.id === currentId);
+
+    if (!existsInCurrentList) {
+      selectedModel.value = nextModels[0];
+    }
+  };
 
   // Actions
   const fetchModels = async () => {
@@ -31,7 +47,12 @@ export const useHfStore = defineStore("hf", () => {
     loading.value = true;
     error.value = null;
     try {
+      if (currentInferenceType.value !== "text") {
+        inferenceResults.value = [];
+      }
+      currentInferenceType.value = "text";
       models.value = await huggingFaceService.listTextModels({ limit: 10 });
+      syncSelectedModel(models.value);
     } catch (err: any) {
       error.value = err.message || "Failed to fetch text models";
       console.error("Failed to fetch text models:", err);
@@ -44,7 +65,12 @@ export const useHfStore = defineStore("hf", () => {
     loading.value = true;
     error.value = null;
     try {
+      if (currentInferenceType.value !== "audio") {
+        inferenceResults.value = [];
+      }
+      currentInferenceType.value = "audio";
       models.value = await huggingFaceService.listAudioModels({ limit: 10 });
+      syncSelectedModel(models.value);
     } catch (err: any) {
       error.value = err.message || "Failed to fetch audio models";
       console.error("Failed to fetch audio models:", err);
@@ -57,7 +83,12 @@ export const useHfStore = defineStore("hf", () => {
     loading.value = true;
     error.value = null;
     try {
+      if (currentInferenceType.value !== "image") {
+        inferenceResults.value = [];
+      }
+      currentInferenceType.value = "image";
       models.value = await huggingFaceService.listImageModels({ limit: 10 });
+      syncSelectedModel(models.value);
     } catch (err: any) {
       error.value = err.message || "Failed to fetch image models";
       console.error("Failed to fetch image models:", err);
@@ -78,6 +109,11 @@ export const useHfStore = defineStore("hf", () => {
     inferenceLoading.value = true;
     inferenceError.value = null;
     try {
+      if (currentInferenceType.value !== type) {
+        inferenceResults.value = [];
+      }
+      currentInferenceType.value = type;
+
       let result: HFInferenceResponse;
       switch (type) {
         case "text":
@@ -89,21 +125,29 @@ export const useHfStore = defineStore("hf", () => {
         case "image":
           result = await huggingFaceService.imageInference(
             modelId,
-            inputs as string,
+            inputs as string | File,
           );
           break;
         case "audio":
           result = await huggingFaceService.audioInference(
             modelId,
-            inputs as string,
+            inputs as string | File,
           );
           break;
         default:
           throw new Error("Invalid inference type");
       }
 
-      // Add result to the beginning of array and keep only last 10
-      inferenceResults.value = [result, ...inferenceResults.value].slice(0, 10);
+      if (type === "image") {
+        // Image page expects the newest classification only.
+        inferenceResults.value = [result];
+      } else {
+        // Keep recent history for text/audio.
+        inferenceResults.value = [result, ...inferenceResults.value].slice(
+          0,
+          10,
+        );
+      }
     } catch (err: any) {
       inferenceError.value = err.message || "Failed to run inference";
       console.error("Failed to run inference:", err);
@@ -114,6 +158,7 @@ export const useHfStore = defineStore("hf", () => {
 
   const clearInferenceResults = () => {
     inferenceResults.value = [];
+    currentInferenceType.value = null;
   };
 
   const clearError = () => {

@@ -31,7 +31,10 @@ export interface HFAudioInferenceResponse {
   generated_audio?: string;
 }
 
-export type HFInferenceResponse = HFTextInferenceResponse | HFImageInferenceResponse | HFAudioInferenceResponse;
+export type HFInferenceResponse =
+  | HFTextInferenceResponse
+  | HFImageInferenceResponse
+  | HFAudioInferenceResponse;
 
 export interface HFInferenceParams {
   max_new_tokens?: number;

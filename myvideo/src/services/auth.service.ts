@@ -1,22 +1,23 @@
-import axios from "axios";
+import apiClient from "@/services/api";
 import type { AuthService, AuthResponse, TokenPayload } from "@/types/api";
 
 export const authService: AuthService = {
   async login(email: string, password: string) {
     try {
-      const response = await axios.post("/api/auth/login", {
+      const response = await apiClient.post("/auth/login", {
         email,
         password,
       });
 
-      const { access_token, refresh_token, user } = response.data;
+      const payload = response.data.data ?? response.data;
+      const { access_token, refresh_token, accessToken, refreshToken, user } =
+        payload;
       return {
-        accessToken: access_token,
-        refreshToken: refresh_token,
+        accessToken: access_token || accessToken,
+        refreshToken: refresh_token || refreshToken,
         user: {
-          id: user.id,
+          id: user.id || user.userId,
           email: user.email,
-          username: user.username,
           name: user.name,
         } as TokenPayload,
       } as AuthResponse;
@@ -26,23 +27,23 @@ export const authService: AuthService = {
     }
   },
 
-  async register(email: string, password: string, username: string, name: string) {
+  async register(email: string, password: string, name: string) {
     try {
-      const response = await axios.post("/api/auth/register", {
+      const response = await apiClient.post("/auth/register", {
         email,
         password,
-        username,
         name,
       });
 
-      const { access_token, refresh_token, user } = response.data;
+      const payload = response.data.data ?? response.data;
+      const { access_token, refresh_token, accessToken, refreshToken, user } =
+        payload;
       return {
-        accessToken: access_token,
-        refreshToken: refresh_token,
+        accessToken: access_token || accessToken,
+        refreshToken: refresh_token || refreshToken,
         user: {
-          id: user.id,
+          id: user.id || user.userId,
           email: user.email,
-          username: user.username,
           name: user.name,
         } as TokenPayload,
       } as AuthResponse;
@@ -53,13 +54,14 @@ export const authService: AuthService = {
   },
 
   logout() {
-    axios.post("/api/auth/logout");
+    apiClient.post("/auth/logout");
   },
 
   async refreshToken() {
     try {
-      const response = await axios.post("/api/auth/refresh");
-      return response.data.access_token;
+      const response = await apiClient.post("/auth/refresh");
+      const payload = response.data.data ?? response.data;
+      return payload.access_token || payload.accessToken;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Token refresh failed");
     }

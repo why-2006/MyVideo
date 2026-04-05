@@ -3,11 +3,11 @@
     <a-layout-header class="header">
       <div class="logo" />
       <a-menu
-        v-model:selectedKeys="selectedKeys1"
+        :selectedKeys="selectedKeys1"
         theme="dark"
         mode="horizontal"
         :style="{ lineHeight: '64px', flex: 1 }"
-        @select="(e: any) => $emit('header-menu-click', e.key)"
+        @click="(e: any) => $emit('header-menu-click', e.key)"
       >
         <a-menu-item v-for="item in headerMenuItems" :key="item.key">
           {{ item.label }}
@@ -22,10 +22,10 @@
     <a-layout>
       <a-layout-sider width="200" style="background: #fff" v-if="showSider">
         <a-menu
-          v-model:selectedKeys="selectedKeys2"
+          :selectedKeys="selectedKeys2"
           mode="inline"
           :style="{ height: '100%', borderRight: 0 }"
-          @select="(e: any) => $emit('sider-menu-click', e.key)"
+          @click="(e: any) => $emit('sider-menu-click', e.key)"
         >
           <a-menu-item v-for="item in siderMenuItems" :key="item.key">
             {{ item.label }}
@@ -51,14 +51,14 @@
   </a-layout>
 </template>
 <script lang="ts" setup>
-import { ref } from "vue";
-
+import { computed } from "vue";
+import logo from "../assets/logo.webp";
 interface MenuItem {
   key: string;
   label: string;
 }
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     headerMenuItems?: MenuItem[];
     siderMenuItems?: MenuItem[];
@@ -82,8 +82,12 @@ defineEmits<{
   "sider-menu-click": [key: string];
 }>();
 
-const selectedKeys1 = ref<string[]>([]);
-const selectedKeys2 = ref<string[]>([]);
+const selectedKeys1 = computed(() =>
+  props.selectedHeaderKey ? [props.selectedHeaderKey] : [],
+);
+const selectedKeys2 = computed(() =>
+  props.selectedSiderKey ? [props.selectedSiderKey] : [],
+);
 </script>
 <style scoped>
 .header {
@@ -107,10 +111,13 @@ const selectedKeys2 = ref<string[]>([]);
 
 .logo {
   float: left;
-  width: 120px;
-  height: 31px;
+  width: 44px;
+  height: 44px;
   margin: 16px 24px 16px 0;
-  background: rgba(255, 255, 255, 0.3);
+  background-image: url("./src/assets/logo.webp");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 .ant-row-rtl .logo {

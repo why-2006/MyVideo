@@ -1,156 +1,107 @@
-import axios from "axios";
+import apiClient from "@/services/api";
 import type {
   HuggingFaceService,
   HFModel,
   HFInferenceResponse,
 } from "@/types/api";
 
+const TEXT_MODEL: HFModel = {
+  id: "katanemo/Arch-Router-1.5B:hf-inference",
+  model_type: "causal-lm",
+  pipeline_tag: "text-generation",
+  downloads: 0,
+  likes: 0,
+};
+
+const AUDIO_MODEL: HFModel = {
+  id: "openai/whisper-large-v3",
+  model_type: "automatic-speech-recognition",
+  pipeline_tag: "automatic-speech-recognition",
+  downloads: 0,
+  likes: 0,
+};
+
+const IMAGE_MODEL: HFModel = {
+  id: "google/vit-base-patch16-224",
+  model_type: "image-classification",
+  pipeline_tag: "image-classification",
+  downloads: 0,
+  likes: 0,
+};
+
+const STATIC_MODELS: HFModel[] = [TEXT_MODEL, AUDIO_MODEL, IMAGE_MODEL];
+
 export const huggingFaceService: HuggingFaceService = {
-  async listModels(params = { limit: 10 }) {
-    try {
-      const response = await axios.get("https://huggingface.co/api/models", {
-        params: {
-          limit: params.limit,
-          sort: "downloads",
-        },
-      });
-
-      return response.data.map((model: any) => ({
-        id: model.id,
-        model_type: model.model_type,
-        pipeline_tag: model.pipeline_tag,
-        downloads: model.downloads,
-        likes: model.likes,
-      })) as HFModel[];
-    } catch (error) {
-      console.error("Failed to fetch models:", error);
-      throw new Error("Failed to fetch models from Hugging Face");
-    }
+  async listModels() {
+    return STATIC_MODELS;
   },
 
-  async listTextModels(params = { limit: 10 }) {
-    try {
-      const response = await axios.get("https://huggingface.co/api/models", {
-        params: {
-          limit: params.limit,
-          sort: "downloads",
-          pipeline_tag: "text-generation",
-        },
-      });
-
-      return response.data.map((model: any) => ({
-        id: model.id,
-        model_type: model.model_type,
-        pipeline_tag: model.pipeline_tag,
-        downloads: model.downloads,
-        likes: model.likes,
-      })) as HFModel[];
-    } catch (error) {
-      console.error("Failed to fetch text models:", error);
-      throw new Error("Failed to fetch text models from Hugging Face");
-    }
+  async listTextModels() {
+    return [TEXT_MODEL];
   },
 
-  async listAudioModels(params = { limit: 10 }) {
-    try {
-      const response = await axios.get("https://huggingface.co/api/models", {
-        params: {
-          limit: params.limit,
-          sort: "downloads",
-          pipeline_tag: "automatic-speech-recognition",
-        },
-      });
-
-      return response.data.map((model: any) => ({
-        id: model.id,
-        model_type: model.model_type,
-        pipeline_tag: model.pipeline_tag,
-        downloads: model.downloads,
-        likes: model.likes,
-      })) as HFModel[];
-    } catch (error) {
-      console.error("Failed to fetch audio models:", error);
-      throw new Error("Failed to fetch audio models from Hugging Face");
-    }
+  async listAudioModels() {
+    return [AUDIO_MODEL];
   },
 
-  async listImageModels(params = { limit: 10 }) {
-    try {
-      const response = await axios.get("https://huggingface.co/api/models", {
-        params: {
-          limit: params.limit,
-          sort: "downloads",
-          pipeline_tag: "image-classification",
-        },
-      });
-
-      return response.data.map((model: any) => ({
-        id: model.id,
-        model_type: model.model_type,
-        pipeline_tag: model.pipeline_tag,
-        downloads: model.downloads,
-        likes: model.likes,
-      })) as HFModel[];
-    } catch (error) {
-      console.error("Failed to fetch image models:", error);
-      throw new Error("Failed to fetch image models from Hugging Face");
-    }
+  async listImageModels() {
+    return [IMAGE_MODEL];
   },
 
   async textInference(modelId: string, inputs: string) {
     try {
-      const response = await axios.post(
-        `https://api-inference.huggingface.co/models/${modelId}`,
-        { inputs },
+      const response = await apiClient.post(
+        `/inference/text/${encodeURIComponent(modelId)}`,
         {
-          headers: {
-            Authorization: `Bearer ${import.meta.env.VITE_HF_TOKEN}`,
-            "Content-Type": "application/json",
-          },
+          inputs,
         },
       );
 
-      return response.data as HFInferenceResponse;
+      return (response.data.data ?? response.data) as HFInferenceResponse;
     } catch (error) {
       console.error("Text inference failed:", error);
       throw new Error("Failed to run text inference");
     }
   },
 
-  async imageInference(modelId: string, inputs: string) {
+  async imageInference(modelId: string, inputs: string | File) {
     try {
-      const response = await axios.post(
-        `https://api-inference.huggingface.co/models/${modelId}`,
-        { inputs },
-        {
-          headers: {
-            Authorization: `Bearer ${import.meta.env.VITE_HF_TOKEN}`,
-            "Content-Type": "application/json",
-          },
-        },
-      );
+      const url = `/inference/image/${encodeURIComponent(modelId)}`;
+      const response =
+        inputs instanceof File
+          ? await apiClient.post(
+              url,
+              (() => {
+                const formData = new FormData();
+                formData.append("file", inputs);
+                return formData;
+              })(),
+            )
+          : await apiClient.post(url, { inputs });
 
-      return response.data as HFInferenceResponse;
+      return (response.data.data ?? response.data) as HFInferenceResponse;
     } catch (error) {
       console.error("Image inference failed:", error);
       throw new Error("Failed to run image inference");
     }
   },
 
-  async audioInference(modelId: string, inputs: string) {
+  async audioInference(modelId: string, inputs: string | File) {
     try {
-      const response = await axios.post(
-        `https://api-inference.huggingface.co/models/${modelId}`,
-        { inputs },
-        {
-          headers: {
-            Authorization: `Bearer ${import.meta.env.VITE_HF_TOKEN}`,
-            "Content-Type": "application/json",
-          },
-        },
-      );
+      const url = `/inference/audio/${encodeURIComponent(modelId)}`;
+      const response =
+        inputs instanceof File
+          ? await apiClient.post(
+              url,
+              (() => {
+                const formData = new FormData();
+                formData.append("file", inputs);
+                return formData;
+              })(),
+            )
+          : await apiClient.post(url, { inputs });
 
-      return response.data as HFInferenceResponse;
+      return (response.data.data ?? response.data) as HFInferenceResponse;
     } catch (error) {
       console.error("Audio inference failed:", error);
       throw new Error("Failed to run audio inference");

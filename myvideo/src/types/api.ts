@@ -1,7 +1,6 @@
 export interface TokenPayload {
   id: string;
   email: string;
-  username: string;
   name: string;
 }
 
@@ -14,7 +13,6 @@ export interface AuthResponse {
 export interface User {
   id: string;
   email: string;
-  username: string;
   name: string;
   avatar?: string;
   createdAt: string;
@@ -44,11 +42,11 @@ export interface HuggingFaceService {
   ) => Promise<HFInferenceResponse>;
   imageInference: (
     modelId: string,
-    inputs: string,
+    inputs: string | File,
   ) => Promise<HFInferenceResponse>;
   audioInference: (
     modelId: string,
-    inputs: string,
+    inputs: string | File,
   ) => Promise<HFInferenceResponse>;
 }
 
@@ -57,7 +55,6 @@ export interface AuthService {
   register: (
     email: string,
     password: string,
-    username: string,
     name: string,
   ) => Promise<AuthResponse>;
   logout: () => void;

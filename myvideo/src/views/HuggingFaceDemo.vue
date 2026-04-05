@@ -18,10 +18,19 @@
             >
               <template #renderItem="{ item }">
                 <a-list-item
-                  :style="{ cursor: 'pointer', background: hfStore.selectedModel?.id === item.id ? '#e6f7ff' : 'transparent' }"
+                  :style="{
+                    cursor: 'pointer',
+                    background:
+                      hfStore.selectedModel?.id === item.id
+                        ? '#e6f7ff'
+                        : 'transparent',
+                  }"
                   @click="selectModel(item)"
                 >
-                  <a-list-item-meta :title="item.id" :description="item.pipeline_tag" />
+                  <a-list-item-meta
+                    :title="item.id"
+                    :description="item.pipeline_tag"
+                  />
                 </a-list-item>
               </template>
             </a-list>
@@ -29,7 +38,10 @@
         </a-col>
 
         <a-col :span="18">
-          <a-card :title="selectedModel?.id || 'Select a Model'" style="height: 100%">
+          <a-card
+            :title="selectedModel?.id || 'Select a Model'"
+            style="height: 100%"
+          >
             <template v-if="selectedModel">
               <a-descriptions :column="2" bordered>
                 <a-descriptions-item label="Pipeline">
@@ -49,7 +61,11 @@
               <a-divider />
 
               <h3>Inference</h3>
-              <a-radio-group v-model:value="inferenceType" button-style="solid" style="margin-bottom: 16px">
+              <a-radio-group
+                v-model:value="inferenceType"
+                button-style="solid"
+                style="margin-bottom: 16px"
+              >
                 <a-radio-button value="text">Text</a-radio-button>
                 <a-radio-button value="image">Image</a-radio-button>
                 <a-radio-button value="audio">Audio</a-radio-button>
@@ -114,14 +130,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { useHfStore } from '@/stores/hf';
-import { ReloadOutlined } from '@ant-design/icons-vue';
+import { ref, onMounted } from "vue";
+import { useHfStore } from "@/stores/hf";
+import { ReloadOutlined } from "@ant-design/icons-vue";
 
 const hfStore = useHfStore();
 const selectedModel = ref(hfStore.selectedModel);
-const inferenceType = ref<'text' | 'image' | 'audio'>('text');
-const inferenceInput = ref('');
+const inferenceType = ref<"text" | "image" | "audio">("text");
+const inferenceInput = ref("");
 
 const fetchModels = async () => {
   await hfStore.fetchModels();
@@ -135,7 +151,11 @@ const runInference = async () => {
   if (!hfStore.selectedModel) return;
 
   const inputs = inferenceInput.value;
-  await hfStore.runInference(hfStore.selectedModel.id, inputs, inferenceType.value);
+  await hfStore.runInference(
+    hfStore.selectedModel.id,
+    inputs,
+    inferenceType.value,
+  );
 };
 
 onMounted(() => {

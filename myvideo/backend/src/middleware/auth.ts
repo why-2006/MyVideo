@@ -1,14 +1,18 @@
-import { Request, Response, NextFunction } from 'express';
-import { jwtService } from '../services/jwt.service';
+import { Request, Response, NextFunction } from "express";
+import { jwtService } from "../services/jwt.service";
 
-export function authMiddleware(req: Request, res: Response, next: NextFunction) {
+export function authMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const authHeader = req.headers.authorization;
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({
         success: false,
-        message: 'Access token is required',
+        message: "Access token is required",
       });
     }
 
@@ -21,7 +25,7 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
   } catch (error) {
     res.status(401).json({
       success: false,
-      message: 'Invalid or expired token',
+      message: "Invalid or expired token",
     });
   }
 }

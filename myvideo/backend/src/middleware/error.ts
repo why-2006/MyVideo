@@ -1,17 +1,17 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from "express";
 
 export function errorHandler(
   err: Error,
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) {
-  console.error('Error:', err);
+  console.error("Error:", err);
+  const status = (err as any).statusCode || 500;
 
-  // 错误响应
-  res.status(500).json({
+  res.status(status).json({
     success: false,
-    message: err.message || 'Internal server error',
+    message: err.message || "Internal server error",
   });
 }
 

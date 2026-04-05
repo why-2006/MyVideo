@@ -1,54 +1,54 @@
 <template>
-  <a-layout-content style="padding: 24px; background: #f0f2f5">
-    <a-card title="User Center" :loading="loading">
-      <a-descriptions :column="2" bordered>
-        <a-descriptions-item label="User ID">
-          {{ userStore.profile?.id || "N/A" }}
-        </a-descriptions-item>
-        <a-descriptions-item label="Name">
-          {{ userStore.profile?.name || "N/A" }}
-        </a-descriptions-item>
-        <a-descriptions-item label="Email">
-          {{ userStore.profile?.email || "N/A" }}
-        </a-descriptions-item>
-        <a-descriptions-item label="Member Since">
-          {{ userStore.profile?.createdAt || "N/A" }}
-        </a-descriptions-item>
-      </a-descriptions>
+  <!-- <a-layout-content style="padding: 24px; background: #f0f2f5"> -->
+  <a-card title="User Center" :loading="loading">
+    <a-descriptions :column="2" bordered>
+      <a-descriptions-item label="User ID">
+        {{ userStore.profile?.id || "N/A" }}
+      </a-descriptions-item>
+      <a-descriptions-item label="Name">
+        {{ userStore.profile?.name || "N/A" }}
+      </a-descriptions-item>
+      <a-descriptions-item label="Email">
+        {{ userStore.profile?.email || "N/A" }}
+      </a-descriptions-item>
+      <a-descriptions-item label="Member Since">
+        {{ userStore.profile?.createdAt || "N/A" }}
+      </a-descriptions-item>
+    </a-descriptions>
 
-      <a-divider />
+    <a-divider />
 
-      <h3>Statistics</h3>
-      <a-row :gutter="16">
-        <a-col :span="6">
-          <a-statistic title="Models Accessed" :value="124" />
-        </a-col>
-        <a-col :span="6">
-          <a-statistic title="Inferences Run" :value="89" />
-        </a-col>
-        <a-col :span="6">
-          <a-statistic title="Favorites" :value="23" />
-        </a-col>
-        <a-col :span="6">
-          <a-statistic title="Storage Used" :value="234" suffix="MB" />
-        </a-col>
-      </a-row>
+    <h3>Statistics</h3>
+    <a-row :gutter="16">
+      <a-col :span="6">
+        <a-statistic title="Models Accessed" :value="124" />
+      </a-col>
+      <a-col :span="6">
+        <a-statistic title="Inferences Run" :value="89" />
+      </a-col>
+      <a-col :span="6">
+        <a-statistic title="Favorites" :value="23" />
+      </a-col>
+      <a-col :span="6">
+        <a-statistic title="Storage Used" :value="234" suffix="MB" />
+      </a-col>
+    </a-row>
 
-      <a-divider />
+    <a-divider />
 
-      <h3>Favorite Models</h3>
-      <a-list :data-source="favoriteModels" item-layout="horizontal">
-        <template #renderItem="{ item }">
-          <a-list-item>
-            <a-list-item-meta
-              :title="item.name"
-              :description="item.description"
-            />
-          </a-list-item>
-        </template>
-      </a-list>
-    </a-card>
-  </a-layout-content>
+    <h3>Favorite Models</h3>
+    <a-list :data-source="favoriteModels" item-layout="horizontal">
+      <template #renderItem="{ item }">
+        <a-list-item>
+          <a-list-item-meta
+            :title="item.name"
+            :description="item.description"
+          />
+        </a-list-item>
+      </template>
+    </a-list>
+  </a-card>
+  <!-- </a-layout-content> -->
 </template>
 
 <script setup lang="ts">
@@ -81,7 +81,6 @@ const fetchProfile = async () => {
       id: authStore.user?.id || "1",
       name: authStore.user?.name || "Test User",
       email: authStore.user?.email || "user@example.com",
-      username: authStore.user?.username || "testuser",
       createdAt: new Date().toISOString(),
     });
   } finally {

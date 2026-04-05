@@ -36,6 +36,11 @@ const routes: RouteRecordRaw[] = [
     component: ImageModel,
   },
   {
+    path: "/hugging-face",
+    name: "HuggingFace",
+    redirect: "/",
+  },
+  {
     path: "/login",
     name: "Login",
     component: Login,
