@@ -228,7 +228,8 @@ const beforeUpload = (file: UploadFile) => {
   }
 
   const maxSizeBytes = MAX_IMAGE_SIZE_MB * 1024 * 1024;
-  if (file.size > maxSizeBytes) {
+  const fileSize = file.size ?? 0;
+  if (fileSize > maxSizeBytes) {
     message.error(`图片大小不能超过 ${MAX_IMAGE_SIZE_MB}MB`);
     return false;
   }

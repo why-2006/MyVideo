@@ -190,13 +190,13 @@ const formatAudioResult = (item: unknown): string => {
   return raw;
 };
 
-const extractAudioDataUrl = (item: unknown): string | null => {
+const extractAudioDataUrl = (item: unknown): string | undefined => {
   const raw = getRawAudioResult(item);
   if (!raw) {
-    return null;
+    return undefined;
   }
 
-  return raw.startsWith("data:audio") ? raw : null;
+  return raw.startsWith("data:audio") ? raw : undefined;
 };
 
 const fetchModels = async () => {
@@ -214,7 +214,8 @@ const beforeUpload = (file: UploadFile) => {
   }
 
   const maxSizeBytes = MAX_AUDIO_SIZE_MB * 1024 * 1024;
-  if (file.size > maxSizeBytes) {
+  const fileSize = file.size ?? 0;
+  if (fileSize > maxSizeBytes) {
     message.error(`音频大小不能超过 ${MAX_AUDIO_SIZE_MB}MB`);
     return false;
   }
