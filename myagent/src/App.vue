@@ -32,6 +32,7 @@ const siderMenuItems = ref<MenuItem[]>([
   { key: "text", label: "文本输入" },
   { key: "audio", label: "音频输入" },
   { key: "image", label: "图片输入" },
+  { key: "multimodal", label: "多模态协作" },
 ]);
 
 const selectedHeaderKey = computed(() => {
@@ -44,6 +45,7 @@ const selectedSiderKey = computed(() => {
   if (route.path === "/text-models") return "text";
   if (route.path === "/audio-models") return "audio";
   if (route.path === "/image-models") return "image";
+  if (route.path === "/multimodal-models") return "multimodal";
   return "";
 });
 
@@ -70,6 +72,9 @@ const handleSiderMenuClick = (key: string) => {
       break;
     case "image":
       router.push("/image-models");
+      break;
+    case "multimodal":
+      router.push("/multimodal-models");
       break;
   }
 };

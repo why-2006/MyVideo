@@ -7,6 +7,7 @@ import Profile from "@/views/Profile.vue";
 import TextModel from "@/views/TextModel.vue";
 import AudioModel from "@/views/AudioModel.vue";
 import ImageModel from "@/views/ImageModel.vue";
+import MultimodalTask from "@/views/MultimodalTask.vue";
 
 const routes: RouteRecordRaw[] = [
   {
@@ -34,6 +35,11 @@ const routes: RouteRecordRaw[] = [
     path: "/image-models",
     name: "ImageModel",
     component: ImageModel,
+  },
+  {
+    path: "/multimodal-models",
+    name: "MultimodalTask",
+    component: MultimodalTask,
   },
   {
     path: "/hugging-face",

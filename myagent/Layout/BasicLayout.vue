@@ -52,7 +52,6 @@
 </template>
 <script lang="ts" setup>
 import { computed } from "vue";
-import logo from "../assets/logo.webp";
 interface MenuItem {
   key: string;
   label: string;
@@ -114,7 +113,7 @@ const selectedKeys2 = computed(() =>
   width: 44px;
   height: 44px;
   margin: 16px 24px 16px 0;
-  background-image: url("./src/assets/logo.webp");
+  background-image: url("../src/assets/logo.webp");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;

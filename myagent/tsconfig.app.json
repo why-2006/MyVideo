@@ -6,8 +6,6 @@
     "types": ["vite/client"],
     "declaration": true,
     "outDir": "./dist",
-    "ignoreDeprecations": "6.0",
-    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
     },

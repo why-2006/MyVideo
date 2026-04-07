@@ -3,6 +3,8 @@ import type {
   HuggingFaceService,
   HFModel,
   HFInferenceResponse,
+  HFTaskInput,
+  HFTaskResponse,
 } from "@/types/api";
 
 const TEXT_MODEL: HFModel = {
@@ -105,6 +107,33 @@ export const huggingFaceService: HuggingFaceService = {
     } catch (error) {
       console.error("Audio inference failed:", error);
       throw new Error("Failed to run audio inference");
+    }
+  },
+
+  async multimodalTaskInference(inputs: HFTaskInput): Promise<HFTaskResponse> {
+    try {
+      const formData = new FormData();
+
+      if (inputs.text && inputs.text.trim()) {
+        formData.append("text", inputs.text.trim());
+      }
+
+      if (inputs.imageFile) {
+        formData.append("image", inputs.imageFile);
+      }
+
+      if (inputs.audioFile) {
+        formData.append("audio", inputs.audioFile);
+      }
+
+      const response = await apiClient.post(
+        "/tasks/multimodal-summary",
+        formData,
+      );
+      return (response.data.data ?? response.data) as HFTaskResponse;
+    } catch (error) {
+      console.error("Multimodal task inference failed:", error);
+      throw new Error("Failed to run multimodal task inference");
     }
   },
 };

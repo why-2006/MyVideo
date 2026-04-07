@@ -31,6 +31,30 @@ export interface HFInferenceResponse {
   [key: string]: any;
 }
 
+export interface HFTaskInput {
+  text?: string;
+  imageFile?: File;
+  audioFile?: File;
+}
+
+export interface HFTaskModalityResult {
+  modality: "text" | "image" | "audio";
+  modelId: string;
+  success: boolean;
+  output?: unknown;
+  error?: string;
+}
+
+export interface HFTaskResponse {
+  finalSummary: string;
+  modalityResults: HFTaskModalityResult[];
+  meta: {
+    durationMs: number;
+    successCount: number;
+    failureCount: number;
+  };
+}
+
 export interface HuggingFaceService {
   listModels: (params?: { limit?: number }) => Promise<HFModel[]>;
   listTextModels: (params?: { limit?: number }) => Promise<HFModel[]>;
@@ -48,6 +72,7 @@ export interface HuggingFaceService {
     modelId: string,
     inputs: string | File,
   ) => Promise<HFInferenceResponse>;
+  multimodalTaskInference: (inputs: HFTaskInput) => Promise<HFTaskResponse>;
 }
 
 export interface AuthService {

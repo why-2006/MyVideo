@@ -1,6 +1,11 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
-import type { HFModel, HFInferenceResponse } from "@/types/api";
+import type {
+  HFModel,
+  HFInferenceResponse,
+  HFTaskInput,
+  HFTaskResponse,
+} from "@/types/api";
 import { huggingFaceService } from "@/services/hf.service";
 
 export const useHfStore = defineStore("hf", () => {
@@ -13,6 +18,9 @@ export const useHfStore = defineStore("hf", () => {
   const inferenceLoading = ref(false);
   const inferenceError = ref<string | null>(null);
   const currentInferenceType = ref<"text" | "image" | "audio" | null>(null);
+  const taskLoading = ref(false);
+  const taskError = ref<string | null>(null);
+  const taskResult = ref<HFTaskResponse | null>(null);
 
   const syncSelectedModel = (nextModels: HFModel[]) => {
     if (nextModels.length === 0) {
@@ -161,9 +169,29 @@ export const useHfStore = defineStore("hf", () => {
     currentInferenceType.value = null;
   };
 
+  const runMultimodalTask = async (inputs: HFTaskInput) => {
+    taskLoading.value = true;
+    taskError.value = null;
+    try {
+      taskResult.value =
+        await huggingFaceService.multimodalTaskInference(inputs);
+    } catch (err: any) {
+      taskError.value = err.message || "Failed to run multimodal task";
+      console.error("Failed to run multimodal task:", err);
+    } finally {
+      taskLoading.value = false;
+    }
+  };
+
+  const clearTaskResult = () => {
+    taskResult.value = null;
+    taskError.value = null;
+  };
+
   const clearError = () => {
     error.value = null;
     inferenceError.value = null;
+    taskError.value = null;
   };
 
   return {
@@ -174,13 +202,18 @@ export const useHfStore = defineStore("hf", () => {
     inferenceResults,
     inferenceLoading,
     inferenceError,
+    taskLoading,
+    taskError,
+    taskResult,
     fetchModels,
     fetchTextModels,
     fetchAudioModels,
     fetchImageModels,
     selectModel,
     runInference,
+    runMultimodalTask,
     clearInferenceResults,
+    clearTaskResult,
     clearError,
   };
 });
