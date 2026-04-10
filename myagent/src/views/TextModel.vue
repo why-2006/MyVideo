@@ -1,6 +1,9 @@
 <template>
   <!-- <a-layout-content style="padding: 24px; background: #f0f2f5"> -->
   <a-card title="文本输入模型">
+    //#extra
+    插槽用于在卡片标题旁边添加额外的内容，这里我们放置了一个刷新按钮，点击后会调用
+    fetchModels 方法来刷新模型列表。
     <template #extra>
       <a-button type="primary" @click="fetchModels">
         <template #icon><ReloadOutlined /></template>
@@ -11,11 +14,15 @@
     <a-row :gutter="16">
       <a-col :span="6">
         <a-card title="模型列表" style="height: 100%">
+          //将models数组作为数据源传递给a-list组件，并且根据hfStore.loading状态显示加载效果。
           <a-list
             :data-source="hfStore.models"
             :loading="hfStore.loading"
             style="height: 400px; overflow-y: auto"
           >
+            //#renderItem
+            插槽用于自定义列表项的渲染方式，这里我们为每个模型项创建了一个可点击的列表项，当点击时会调用
+            selectModel 方法来选择该模型，并且根据是否被选中改变背景颜色。
             <template #renderItem="{ item }">
               <a-list-item
                 :style="{
@@ -95,6 +102,7 @@
             </a-result>
 
             <div v-else-if="hfStore.inferenceResults.length > 0">
+              //将推理结果数组作为数据源传递给a-list组件，并且为每个结果项创建一个列表项，显示生成的文本内容。
               <a-list
                 :data-source="hfStore.inferenceResults"
                 bordered

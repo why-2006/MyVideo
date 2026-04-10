@@ -160,6 +160,7 @@ import { useHfStore } from "@/stores/hf";
 import { ReloadOutlined, PlusOutlined } from "@ant-design/icons-vue";
 import type { UploadFile } from "ant-design-vue";
 import { message } from "ant-design-vue";
+import { fileUtils } from "@/services/api";
 
 interface ImageClassResult {
   label: string;
@@ -169,7 +170,7 @@ interface ImageClassResult {
 const hfStore = useHfStore();
 const fileList = ref<UploadFile[]>([]);
 const MAX_IMAGE_SIZE_MB = 10;
-
+//处理模型返回的结果，确保兼容不同格式的输出，并提取图片类型和分数
 const parseImageResult = (item: unknown): ImageClassResult[] => {
   const raw =
     typeof item === "string"
@@ -177,11 +178,10 @@ const parseImageResult = (item: unknown): ImageClassResult[] => {
       : typeof item === "object" && item !== null
         ? (item as any).generated_image
         : undefined;
-
+  //结果应该是一个数组，包含多个分类标签和对应的置信度分数
   if (typeof raw !== "string") {
     return [];
   }
-
   try {
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) {
@@ -251,7 +251,25 @@ const runInference = async () => {
       message.error("无法获取文件，请重新选择");
       return;
     }
-    await hfStore.runInference(hfStore.selectedModel.id, file, "image");
+
+    const compressedFile = await fileUtils.compressImage(file, {
+      maxWidth: 1920,
+      maxHeight: 1920,
+      quality: 0.82,
+      maxFileSizeMB: 1,
+    });
+
+    if (compressedFile.size < file.size) {
+      message.success(
+        `图片已压缩：${(file.size / 1024 / 1024).toFixed(2)}MB -> ${(compressedFile.size / 1024 / 1024).toFixed(2)}MB`,
+      );
+    }
+
+    await hfStore.runInference(
+      hfStore.selectedModel.id,
+      compressedFile,
+      "image",
+    );
   } catch (error) {
     console.error("Failed to process image file:", error);
     message.error("图片处理失败，请重试");

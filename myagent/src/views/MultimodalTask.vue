@@ -87,7 +87,7 @@
         bordered
         size="small"
       >
-        <template #renderItem="{ item }">
+        <!-- <template #renderItem="{ item }">
           <a-list-item>
             <div class="modality-result">
               <strong>{{ item.modality }} | {{ item.modelId }}</strong>
@@ -95,7 +95,7 @@
               <p v-else class="error-text">失败：{{ item.error }}</p>
             </div>
           </a-list-item>
-        </template>
+        </template> -->
       </a-list>
     </template>
   </a-card>
@@ -172,18 +172,6 @@ const clearAll = () => {
   imageFileList.value = [];
   audioFileList.value = [];
   hfStore.clearTaskResult();
-};
-
-const formatOutput = (output: unknown): string => {
-  if (typeof output === "string") {
-    return output;
-  }
-
-  if (output && typeof output === "object") {
-    return JSON.stringify(output);
-  }
-
-  return String(output);
 };
 </script>
 

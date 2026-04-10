@@ -34,6 +34,7 @@ const IMAGE_MODEL: HFModel = {
 const STATIC_MODELS: HFModel[] = [TEXT_MODEL, AUDIO_MODEL, IMAGE_MODEL];
 
 export const huggingFaceService: HuggingFaceService = {
+  //async将返回值自动包成Promise对象，保持调用侧统一接口，方便未来扩展为动态获取模型列表
   async listModels() {
     return STATIC_MODELS;
   },
@@ -53,6 +54,7 @@ export const huggingFaceService: HuggingFaceService = {
   async textInference(modelId: string, inputs: string) {
     try {
       const response = await apiClient.post(
+        //encodeURIComponent对模型id进行编码，确保url合法性
         `/inference/text/${encodeURIComponent(modelId)}`,
         {
           inputs,
@@ -113,7 +115,7 @@ export const huggingFaceService: HuggingFaceService = {
   async multimodalTaskInference(inputs: HFTaskInput): Promise<HFTaskResponse> {
     try {
       const formData = new FormData();
-
+      //检查文本输入是否存在且非空，只有在有效文本输入时才添加到FormData中，避免发送无效或空文本数据
       if (inputs.text && inputs.text.trim()) {
         formData.append("text", inputs.text.trim());
       }

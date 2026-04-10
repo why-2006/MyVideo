@@ -14,6 +14,7 @@ const routes: RouteRecordRaw[] = [
     path: "/",
     name: "Home",
     component: Home,
+    meta: { requiresAuth: true },
   },
   {
     path: "/user-center",
@@ -25,26 +26,25 @@ const routes: RouteRecordRaw[] = [
     path: "/text-models",
     name: "TextModel",
     component: TextModel,
+    meta: { requiresAuth: true },
   },
   {
     path: "/audio-models",
     name: "AudioModel",
     component: AudioModel,
+    meta: { requiresAuth: true },
   },
   {
     path: "/image-models",
     name: "ImageModel",
     component: ImageModel,
+    meta: { requiresAuth: true },
   },
   {
     path: "/multimodal-models",
     name: "MultimodalTask",
     component: MultimodalTask,
-  },
-  {
-    path: "/hugging-face",
-    name: "HuggingFace",
-    redirect: "/",
+    meta: { requiresAuth: true },
   },
   {
     path: "/login",

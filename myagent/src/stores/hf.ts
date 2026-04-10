@@ -21,7 +21,7 @@ export const useHfStore = defineStore("hf", () => {
   const taskLoading = ref(false);
   const taskError = ref<string | null>(null);
   const taskResult = ref<HFTaskResponse | null>(null);
-
+  //同步选中模型与当前模型列表，确保选中的模型在新列表中仍然存在，否则重置为第一个模型或null
   const syncSelectedModel = (nextModels: HFModel[]) => {
     if (nextModels.length === 0) {
       selectedModel.value = null;
@@ -54,6 +54,7 @@ export const useHfStore = defineStore("hf", () => {
   const fetchTextModels = async () => {
     loading.value = true;
     error.value = null;
+    //如果当前不是文本模型，切换类型时清空之前的推理结果
     try {
       if (currentInferenceType.value !== "text") {
         inferenceResults.value = [];
@@ -108,7 +109,7 @@ export const useHfStore = defineStore("hf", () => {
   const selectModel = (model: HFModel) => {
     selectedModel.value = model;
   };
-
+  //根据模型类型运行推理，并处理不同类型的输入和输出，确保结果与当前模型类型一致
   const runInference = async (
     modelId: string,
     inputs: unknown,
@@ -116,6 +117,7 @@ export const useHfStore = defineStore("hf", () => {
   ) => {
     inferenceLoading.value = true;
     inferenceError.value = null;
+    //清除之前的推理结果，如果切换了模型类型，确保结果与当前类型一致
     try {
       if (currentInferenceType.value !== type) {
         inferenceResults.value = [];
@@ -147,10 +149,10 @@ export const useHfStore = defineStore("hf", () => {
       }
 
       if (type === "image") {
-        // Image page expects the newest classification only.
+        // 对于图像模型，直接替换之前的结果
         inferenceResults.value = [result];
       } else {
-        // Keep recent history for text/audio.
+        // 对于文本和音频模型，保留之前的结果并将新结果添加到前面，最多保留10条
         inferenceResults.value = [result, ...inferenceResults.value].slice(
           0,
           10,

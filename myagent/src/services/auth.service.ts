@@ -2,6 +2,7 @@ import apiClient from "@/services/api";
 import type { AuthService, AuthResponse, TokenPayload } from "@/types/api";
 
 export const authService: AuthService = {
+  //获取access token和refresh token，并解析用户信息
   async login(email: string, password: string) {
     try {
       const response = await apiClient.post("/auth/login", {
@@ -55,15 +56,5 @@ export const authService: AuthService = {
 
   logout() {
     apiClient.post("/auth/logout");
-  },
-
-  async refreshToken() {
-    try {
-      const response = await apiClient.post("/auth/refresh");
-      const payload = response.data.data ?? response.data;
-      return payload.access_token || payload.accessToken;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || "Token refresh failed");
-    }
   },
 };

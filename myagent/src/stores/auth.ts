@@ -2,6 +2,35 @@ import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import type { TokenPayload } from "@/types/api";
 import { authService } from "@/services/auth.service";
+//解码JWT 将token的payload部分解析为字符串，提取用户信息
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) {
+      return null;
+    }
+    //将url安全的Base64字符串转换为标准Base64格式
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    //解码Base64字符串并解析为JSON对象
+    const decoded = atob(normalized);
+    return JSON.parse(decoded) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+//从localStorage读取用户信息，解析为TokenPayload对象，如果解析失败则返回null
+function readStoredUser(): TokenPayload | null {
+  const raw = localStorage.getItem("user_profile");
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(raw) as TokenPayload;
+  } catch {
+    return null;
+  }
+}
 
 export const useAuthStore = defineStore("auth", () => {
   // State
@@ -9,7 +38,7 @@ export const useAuthStore = defineStore("auth", () => {
   const refreshToken = ref<string | null>(
     localStorage.getItem("refresh_token"),
   );
-  const user = ref<TokenPayload | null>(null);
+  const user = ref<TokenPayload | null>(readStoredUser());
   const loading = ref(false);
   const error = ref<string | null>(null);
 
@@ -27,6 +56,7 @@ export const useAuthStore = defineStore("auth", () => {
 
   const setUser = (userData: TokenPayload) => {
     user.value = userData;
+    localStorage.setItem("user_profile", JSON.stringify(userData));
   };
 
   const updateUser = (updates: Partial<TokenPayload>) => {
@@ -41,7 +71,28 @@ export const useAuthStore = defineStore("auth", () => {
     user.value = null;
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
+    localStorage.removeItem("user_profile");
   };
+  //应用启动时尝试从现有 access token 中恢复用户信息，以支持页面刷新后保持登录状态
+  if (!user.value && accessToken.value) {
+    const payload = decodeJwtPayload(accessToken.value);
+    if (payload && typeof payload.email === "string") {
+      const restoredUser: TokenPayload = {
+        id:
+          typeof payload.userId === "string"
+            ? payload.userId
+            : typeof payload.id === "string"
+              ? payload.id
+              : "",
+        email: payload.email,
+        name: typeof payload.name === "string" ? payload.name : payload.email,
+      };
+
+      if (restoredUser.id) {
+        setUser(restoredUser);
+      }
+    }
+  }
 
   const login = async (email: string, password: string) => {
     loading.value = true;

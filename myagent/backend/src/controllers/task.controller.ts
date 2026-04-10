@@ -7,6 +7,15 @@ export async function runMultimodalSummaryTask(
   next: NextFunction,
 ) {
   try {
+    const userId = (req as Request & { user?: { userId: string } }).user
+      ?.userId;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+    }
+
     const files = req.files as
       | {
           [fieldname: string]: Express.Multer.File[];
@@ -25,21 +34,24 @@ export async function runMultimodalSummaryTask(
       });
     }
 
-    const result = await taskService.runMultimodalSummaryTask({
-      text,
-      image: imageFile
-        ? {
-            buffer: imageFile.buffer,
-            contentType: imageFile.mimetype,
-          }
-        : undefined,
-      audio: audioFile
-        ? {
-            buffer: audioFile.buffer,
-            contentType: audioFile.mimetype,
-          }
-        : undefined,
-    });
+    const result = await taskService.runMultimodalSummaryTask(
+      {
+        text,
+        image: imageFile
+          ? {
+              buffer: imageFile.buffer,
+              contentType: imageFile.mimetype,
+            }
+          : undefined,
+        audio: audioFile
+          ? {
+              buffer: audioFile.buffer,
+              contentType: audioFile.mimetype,
+            }
+          : undefined,
+      },
+      userId,
+    );
 
     res.json({
       success: true,

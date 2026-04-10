@@ -83,5 +83,4 @@ export interface AuthService {
     name: string,
   ) => Promise<AuthResponse>;
   logout: () => void;
-  refreshToken: () => Promise<string>;
 }

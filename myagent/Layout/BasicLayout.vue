@@ -14,7 +14,14 @@
         </a-menu-item>
       </a-menu>
       <div class="auth-buttons">
-        <router-link to="/login">
+        <a-button
+          v-if="authStore.isAuthenticated"
+          type="default"
+          @click="goToUserCenter"
+        >
+          {{ accountName }}
+        </a-button>
+        <router-link v-else to="/login">
           <a-button type="primary">登录</a-button>
         </router-link>
       </div>
@@ -52,16 +59,21 @@
 </template>
 <script lang="ts" setup>
 import { computed } from "vue";
+import { useRouter } from "vue-router";
+import { useAuthStore } from "@/stores";
 interface MenuItem {
   key: string;
   label: string;
 }
 
+const router = useRouter();
+const authStore = useAuthStore();
+
 const props = withDefaults(
   defineProps<{
     headerMenuItems?: MenuItem[];
     siderMenuItems?: MenuItem[];
-    breadcrumbItems?: string[];
+    // breadcrumbItems?: string[];
     showSider?: boolean;
     selectedHeaderKey?: string;
     selectedSiderKey?: string;
@@ -69,7 +81,7 @@ const props = withDefaults(
   {
     headerMenuItems: () => [],
     siderMenuItems: () => [],
-    breadcrumbItems: () => ["Home", "List", "App"],
+    // breadcrumbItems: () => ["Home", "List", "App"],
     showSider: true,
     selectedHeaderKey: "",
     selectedSiderKey: "",
@@ -87,6 +99,12 @@ const selectedKeys1 = computed(() =>
 const selectedKeys2 = computed(() =>
   props.selectedSiderKey ? [props.selectedSiderKey] : [],
 );
+
+const accountName = computed(() => authStore.user?.name || "账号");
+
+const goToUserCenter = () => {
+  router.push("/user-center");
+};
 </script>
 <style scoped>
 .header {

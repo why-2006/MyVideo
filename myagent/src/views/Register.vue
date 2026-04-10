@@ -94,7 +94,7 @@ const handleRegister = async () => {
   );
 
   if (success) {
-    router.push("/hugging-face");
+    router.push("/");
   }
 };
 </script>

@@ -5,7 +5,7 @@ const apiClient = axios.create({
   timeout: 60000,
 });
 
-// 请求拦截器
+// 请求拦截器：请求头自动添加 Authorization，并进行错误处理
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("access_token");
@@ -89,6 +89,94 @@ export const userApi = {
 
 // 文件处理工具
 export const fileUtils = {
+  async compressImage(
+    file: File,
+    options?: {
+      maxWidth?: number;
+      maxHeight?: number;
+      quality?: number;
+      maxFileSizeMB?: number;
+    },
+  ): Promise<File> {
+    const {
+      maxWidth = 1920,
+      maxHeight = 1920,
+      quality = 0.82,
+      maxFileSizeMB = 1,
+    } = options ?? {};
+
+    const shouldCompress =
+      file.size > maxFileSizeMB * 1024 * 1024 || file.type === "image/png";
+
+    if (!shouldCompress || typeof window === "undefined") {
+      return file;
+    }
+
+    const imageUrl = URL.createObjectURL(file);
+
+    try {
+      const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const element = new Image();
+        element.onload = () => resolve(element);
+        element.onerror = () =>
+          reject(new Error("Failed to load image for compression"));
+        element.src = imageUrl;
+      });
+
+      let { width, height } = image;
+      const scale = Math.min(maxWidth / width, maxHeight / height, 1);
+
+      if (scale < 1) {
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+      }
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+
+      const context = canvas.getContext("2d");
+      if (!context) {
+        return file;
+      }
+
+      context.drawImage(image, 0, 0, width, height);
+      //将无损格式转换为有损格式，进一步压缩文件大小
+      const outputType = file.type === "image/png" ? "image/jpeg" : file.type;
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob(
+          (result) => {
+            if (!result) {
+              reject(new Error("Failed to compress image"));
+              return;
+            }
+            resolve(result);
+          },
+          outputType || "image/jpeg",
+          outputType === "image/jpeg" || outputType === "image/webp"
+            ? quality
+            : undefined,
+        );
+      });
+
+      const extension =
+        outputType === "image/jpeg"
+          ? "jpg"
+          : outputType === "image/webp"
+            ? "webp"
+            : file.name.split(".").pop() || "png";
+      //去除文件名中的扩展名
+      const baseName = file.name.replace(/\.[^.]+$/, "") || "compressed-image";
+      //生成新的File对象，保持原文件名但更新扩展名
+      return new File([blob], `${baseName}.${extension}`, {
+        type: blob.type || outputType || file.type || "image/jpeg",
+        lastModified: Date.now(),
+      });
+    } finally {
+      URL.revokeObjectURL(imageUrl);
+    }
+  },
+
   async fileToBase64(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();

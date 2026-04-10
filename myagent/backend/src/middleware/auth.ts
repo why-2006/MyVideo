@@ -20,7 +20,8 @@ export function authMiddleware(
     const decoded = jwtService.verifyToken(token);
 
     // 将用户信息添加到请求对象
-    req.user = decoded;
+    (req as Request & { user?: { userId: string; email: string } }).user =
+      decoded;
     next();
   } catch (error) {
     res.status(401).json({

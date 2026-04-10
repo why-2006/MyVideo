@@ -1,6 +1,10 @@
 <template>
   <!-- <a-layout-content style="padding: 24px; background: #f0f2f5"> -->
   <a-card title="User Center" :loading="loading">
+    <template #extra>
+      <a-button danger @click="handleLogout">退出登录</a-button>
+    </template>
+
     <a-descriptions :column="2" bordered>
       <a-descriptions-item label="User ID">
         {{ userStore.profile?.id || "N/A" }}
@@ -53,10 +57,12 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 import { useUserStore } from "@/stores/user";
 import { userApi } from "@/services/api";
 
+const router = useRouter();
 const authStore = useAuthStore();
 const userStore = useUserStore();
 const loading = ref(false);
@@ -88,10 +94,18 @@ const fetchProfile = async () => {
   }
 };
 
+const handleLogout = () => {
+  authStore.logout();
+  userStore.clearProfile();
+  router.push("/login");
+};
+
 onMounted(() => {
   if (!authStore.isAuthenticated) {
-    authStore.login("user@example.com", "password123");
+    router.replace("/login");
+    return;
   }
+
   fetchProfile();
 });
 </script>

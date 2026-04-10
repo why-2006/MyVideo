@@ -1,5 +1,7 @@
 <template>
+  <router-view v-if="isAuthPage" />
   <BasicLayout
+    v-else
     :headerMenuItems="headerMenuItems"
     :siderMenuItems="siderMenuItems"
     :selectedHeaderKey="selectedHeaderKey"
@@ -34,7 +36,7 @@ const siderMenuItems = ref<MenuItem[]>([
   { key: "image", label: "图片输入" },
   { key: "multimodal", label: "多模态协作" },
 ]);
-
+//管理路由状态，确保导航菜单正确反映当前页面，并处理用户点击菜单项时的导航逻辑
 const selectedHeaderKey = computed(() => {
   if (route.path === "/") return "1";
   if (route.path === "/user-center") return "3";
@@ -49,8 +51,9 @@ const selectedSiderKey = computed(() => {
   return "";
 });
 
-// const breadcrumbItems = ref<string[]>([]);
-
+const isAuthPage = computed(
+  () => route.path === "/login" || route.path === "/register",
+);
 const handleHeaderMenuClick = (key: string) => {
   switch (key) {
     case "1":
@@ -83,8 +86,7 @@ const handleSiderMenuClick = (key: string) => {
 .site-layout-background {
   background: #fff;
 }
-
-/* Hide native Edge password reveal icon to avoid double eye with Ant Design */
+/* 隐藏输入框中的清除按钮和密码可见按钮 */
 input::-ms-reveal,
 input::-ms-clear {
   display: none;

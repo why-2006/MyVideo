@@ -70,7 +70,7 @@ const handleLogin = async () => {
   const success = await authStore.login(form.value.email, form.value.password);
   if (success) {
     const redirect = route.query.redirect as string;
-    router.push(redirect || "/hugging-face");
+    router.push(redirect || "/");
   }
 };
 </script>
