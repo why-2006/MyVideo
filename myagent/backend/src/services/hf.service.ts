@@ -11,7 +11,7 @@ import type {
 } from "../types/hf";
 
 const TEXT_MODEL: HFModel = {
-  id: "katanemo/Arch-Router-1.5B:hf-inference",
+  id: "Qwen/Qwen2.5-7B-Instruct",
   model_type: "causal-lm",
   pipeline_tag: "text-generation",
   likes: 0,
@@ -41,7 +41,7 @@ const AUDIO_MODEL: HFModel = {
 };
 
 const IMAGE_MODEL: HFModel = {
-  id: "google/vit-base-patch16-224",
+  id: "google/vit-large-patch16-224",
   model_type: "image-classification",
   pipeline_tag: "image-classification",
   likes: 0,
@@ -56,12 +56,13 @@ const IMAGE_MODEL: HFModel = {
 };
 
 const STATIC_MODELS: HFModel[] = [TEXT_MODEL, AUDIO_MODEL, IMAGE_MODEL];
-
+//set函数存储modelId
 const SUPPORTED_MODEL_IDS = new Set(STATIC_MODELS.map((model) => model.id));
 
 export class HuggingFaceService {
+  //使用IPv4的https.Agent，避免在某些环境下出现IPv6连接问题；保持连接以提高性能
   private readonly httpsAgent = new https.Agent({ family: 4, keepAlive: true });
-
+  //判断是否应该绕过代理，如果返回true则绕过，false则使用代理
   private shouldBypassProxy(hostname: string): boolean {
     if (!config.huggingFace.noProxy.trim()) {
       return false;
@@ -77,6 +78,7 @@ export class HuggingFaceService {
       if (rule === "*") {
         return true;
       }
+      //如果规则以点开头，表示匹配该域及其子域；否则只匹配完全相同的主机名或以该规则结尾的子域
       if (rule.startsWith(".")) {
         return host.endsWith(rule);
       }
@@ -114,16 +116,22 @@ export class HuggingFaceService {
   constructor() {
     this.ensureApiKey();
   }
-
+  //将错误进行统一处理，提取有用信息并抛出新的错误，供调用者捕获
   private handleInferenceError(error: any): never {
     const timeoutMessage =
       error?.code === "ETIMEDOUT" || error?.code === "ECONNABORTED"
         ? `Connection to ${config.huggingFace.apiUrl} timed out`
         : undefined;
-    const responseMessage =
+    const rawResponseMessage =
       error?.response?.data?.error ||
       error?.response?.data?.message ||
       error?.response?.statusText;
+    const responseMessage =
+      typeof rawResponseMessage === "string"
+        ? rawResponseMessage
+        : rawResponseMessage
+          ? JSON.stringify(rawResponseMessage)
+          : undefined;
     const message =
       timeoutMessage ||
       responseMessage ||
@@ -143,7 +151,7 @@ export class HuggingFaceService {
       );
     }
   }
-
+  //解码输入的二进制数据，支持多种格式（base64字符串、ArrayBuffer、Blob、Buffer），并提取内容类型
   private decodeBinaryInput(
     input: string | ArrayBuffer | Blob | Buffer | undefined,
     explicitContentType?: string,
@@ -156,20 +164,21 @@ export class HuggingFaceService {
     }
 
     if (typeof input === "string") {
+      //如果是base64字符串，尝试提取内容类型
       const contentTypeMatch = input.match(/^data:([^;]+);base64,/i);
       const contentType = contentTypeMatch?.[1];
       const base64 = input.includes(",") ? input.split(",")[1] : input;
       const buffer = Buffer.from(base64, "base64");
       return { buffer, contentType: explicitContentType || contentType };
     }
-
+    //如果是Blob对象，读取为Buffer
     if (input instanceof ArrayBuffer) {
       return {
         buffer: Buffer.from(input),
         contentType: explicitContentType,
       };
     }
-
+    //如果是二进制Buffer对象，直接使用
     if (Buffer.isBuffer(input)) {
       return {
         buffer: input,
@@ -179,7 +188,7 @@ export class HuggingFaceService {
 
     throw new Error("Unsupported binary input type");
   }
-
+  //验证模型ID是否在支持的列表中，如果不支持则抛出错误
   private assertValidModelId(modelId: string): void {
     if (!SUPPORTED_MODEL_IDS.has(modelId)) {
       const error = new Error(`Unsupported modelId: ${modelId}`);
@@ -187,7 +196,7 @@ export class HuggingFaceService {
       throw error;
     }
   }
-
+  //执行文本生成的聊天接口，发送用户输入和可选参数，并返回生成的文本结果
   private async chatCompletion(
     modelId: string,
     userInput: string,
@@ -211,6 +220,7 @@ export class HuggingFaceService {
         Accept: "application/json",
         "Content-Type": "application/json",
       },
+      //使用自定义的https.Agent以确保使用IPv4连接，并且只有在没有配置代理或代理不适用时才使用；如果代理适用，则由axios处理代理连接
       httpsAgent: proxy === undefined ? this.httpsAgent : undefined,
       proxy,
       timeout: 60000,
@@ -312,7 +322,7 @@ export class HuggingFaceService {
         inputs,
         contentType,
       );
-
+      //某些模型可能返回数组形式的结果，直接将其JSON字符串化；如果是对象且有label字段，则返回label，否则也进行字符串化
       if (Array.isArray(response)) {
         return {
           generated_image: JSON.stringify(response),

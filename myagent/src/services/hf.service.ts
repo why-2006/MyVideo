@@ -8,7 +8,7 @@ import type {
 } from "@/types/api";
 
 const TEXT_MODEL: HFModel = {
-  id: "katanemo/Arch-Router-1.5B:hf-inference",
+  id: "Qwen/Qwen2.5-7B-Instruct",
   model_type: "causal-lm",
   pipeline_tag: "text-generation",
   downloads: 0,
@@ -24,7 +24,7 @@ const AUDIO_MODEL: HFModel = {
 };
 
 const IMAGE_MODEL: HFModel = {
-  id: "google/vit-base-patch16-224",
+  id: "google/vit-large-patch16-224",
   model_type: "image-classification",
   pipeline_tag: "image-classification",
   downloads: 0,

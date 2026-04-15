@@ -1,10 +1,10 @@
-import express, { Application } from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import morgan from 'morgan';
-import apiRoutes from './routes';
-import { errorHandler, notFoundHandler } from './middleware/error';
-import { config } from './config';
+import express, { Application } from "express";
+import cors from "cors";
+import helmet from "helmet";
+import morgan from "morgan";
+import apiRoutes from "./routes";
+import { errorHandler, notFoundHandler } from "./middleware/error";
+import { config } from "./config";
 
 export function createApp(): Application {
   const app = express();
@@ -12,32 +12,32 @@ export function createApp(): Application {
   // 安全头
   app.use(helmet());
 
-  // CORS
+  // CORS 配置
   app.use(
     cors({
       origin: config.cors.origin,
       credentials: true,
-    })
+    }),
   );
 
   // JSON 解析
   app.use(express.json());
 
   // 日志
-  if (config.server.env === 'development') {
-    app.use(morgan('dev'));
+  if (config.server.env === "development") {
+    app.use(morgan("dev"));
   } else {
-    app.use(morgan('combined'));
+    app.use(morgan("combined"));
   }
 
   // API 路由
-  app.use('/api', apiRoutes);
+  app.use("/api", apiRoutes);
 
   // 健康检查
-  app.get('/health', (req, res) => {
+  app.get("/health", (req, res) => {
     res.json({
       success: true,
-      message: 'Server is running',
+      message: "Server is running",
       timestamp: new Date().toISOString(),
     });
   });

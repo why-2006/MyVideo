@@ -1,6 +1,6 @@
 import mysql from "mysql2/promise";
 import { config } from "../config";
-
+//创建MySQL连接池
 export const db = mysql.createPool({
   host: config.database.host,
   port: config.database.port,
@@ -11,8 +11,9 @@ export const db = mysql.createPool({
   connectionLimit: 10,
   queueLimit: 0,
 });
-
+//初始化数据库，创建必要的表
 export async function initDatabase() {
+  //创建用户表
   await db.execute(`
     CREATE TABLE IF NOT EXISTS users (
       id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -24,7 +25,7 @@ export async function initDatabase() {
       PRIMARY KEY (id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
   `);
-
+  //创建任务记忆表
   await db.execute(`
     CREATE TABLE IF NOT EXISTS task_memories (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,

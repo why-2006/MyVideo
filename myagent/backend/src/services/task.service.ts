@@ -38,5 +38,5 @@ export class TaskService {
     return runMultimodalSummaryTaskChain(input, userId);
   }
 }
-
+//导出实例化对象，初始化逻辑，共享状态
 export const taskService = new TaskService();

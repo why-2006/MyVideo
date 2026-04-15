@@ -12,7 +12,7 @@ async function startServer() {
     console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
     console.log(`API Base URL: http://localhost:${PORT}/api`);
   });
-
+  // 优雅关闭服务器
   process.on("SIGTERM", () => {
     console.log("SIGTERM signal received: closing HTTP server");
     server.close(() => {

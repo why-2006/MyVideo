@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { huggingFaceService } from "../services/hf.service";
-import type { HFModel } from "../types/hf";
+// import type { HFModel } from "../types/hf";
 
 function parseParameters(raw: unknown): any {
   if (typeof raw !== "string") {
