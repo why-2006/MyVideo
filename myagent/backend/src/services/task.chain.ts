@@ -159,14 +159,15 @@ function buildHistoryPrompt(memories: TaskMemoryHistoryItem[]): string {
 }
 //构建基于证据的问答提示词，指导文本模型根据多模态证据和历史记忆回答用户问题
 function buildGroundedQaPrompt(
-  userQuestion: string,
   evidence: string,
   historyPrompt: string,
+  userQuestion?: string,
 ): string {
   return [
     "你是一个多模态问答助手。",
     "请严格根据给定证据回答用户问题，不要臆测。",
     "回答优先级：当前多模态证据 > 历史记忆 > 常识。",
+    "若不能从历史记忆中获取有用信息则不要提及。",
     "若证据不足或相关模态失败，请明确说明不确定性。",
     "不要编造历史中不存在的细节。",
     "",
@@ -182,29 +183,29 @@ function buildGroundedQaPrompt(
   ].join("\n");
 }
 //生成总结提示词，包含输入模态信息、成功失败结果等，指导生成模型输出最终总结
-function buildSummaryPrompt(results: ModalityResult[]): string {
-  const successItems = results.filter((item) => item.success);
+// function buildSummaryPrompt(results: ModalityResult[]): string {
+//   const successItems = results.filter((item) => item.success);
 
-  return [
-    "你是一个多模态结果总结助手。",
-    "请根据以下不同模态的推理结果，输出一段结构清晰、简洁中文总结。",
-    "如果有失败项，请在最后Tips指出失败模态并给出谨慎说明。",
-    "",
-    `输入模态数: ${results.length}`,
-    `成功: ${successItems.length}`,
-    `失败: ${results.length - successItems.length}`,
-    "",
-    ...results.map((item, index) => {
-      if (!item.success) {
-        return `${index + 1}. [${item.modality}] 失败: ${item.error}`;
-      }
+//   return [
+//     "你是一个多模态结果总结助手。",
+//     "请根据以下不同模态的推理结果，输出一段结构清晰、简洁中文总结。",
+//     "如果有失败项，请在最后Tips指出失败模态并给出谨慎说明。",
+//     "",
+//     `输入模态数: ${results.length}`,
+//     `成功: ${successItems.length}`,
+//     `失败: ${results.length - successItems.length}`,
+//     "",
+//     ...results.map((item, index) => {
+//       if (!item.success) {
+//         return `${index + 1}. [${item.modality}] 失败: ${item.error}`;
+//       }
 
-      return `${index + 1}. [${item.modality}] 成功输出: ${normalizeOutput(item.output)}`;
-    }),
-    "",
-    "根据各个模态的结果给出最终输出：",
-  ].join("\n");
-}
+//       return `${index + 1}. [${item.modality}] 成功输出: ${normalizeOutput(item.output)}`;
+//     }),
+//     "",
+//     "根据各个模态的结果给出最终输出：",
+//   ].join("\n");
+// }
 
 function createMultimodalSummaryChain() {
   // 定义每个模态的推理步骤，串联成一个整体流程
@@ -343,29 +344,18 @@ function createMultimodalSummaryChain() {
     },
   );
 
-  const prepareSummaryPrompt = RunnableLambda.from(
-    async (context: ChainContext) => {
-      if (context.modalityResults.filter((item) => item.success).length === 0) {
-        const error = new Error("All modality inference steps failed");
-        (error as { statusCode?: number }).statusCode = 502;
-        throw error;
-      }
-
-      return {
-        ...context,
-        summaryPrompt: buildGroundedQaPrompt(
-          context.input.text?.trim() || "请基于当前多模态证据给出最终总结。",
-          context.evidencePrompt || buildEvidenceBlock(context.modalityResults),
-          context.historyPrompt || "无历史记忆",
-        ),
-      };
-    },
-  );
-
   const generateSummary = RunnableLambda.from(async (context: ChainContext) => {
+    const evidence =
+      context.evidencePrompt || buildEvidenceBlock(context.modalityResults);
+    const groundedPrompt = buildGroundedQaPrompt(
+      evidence,
+      context.historyPrompt || "无历史记忆",
+      context.input.text?.trim(),
+    );
+
     const summaryResult = await huggingFaceService.textInference(
       TEXT_MODEL_ID,
-      context.summaryPrompt || "",
+      groundedPrompt,
       {
         temperature: 0.1,
         top_p: 0.6,
@@ -425,8 +415,6 @@ function createMultimodalSummaryChain() {
   return middleware
     .pipe(loadHistoryMemory)
     .pipe(loadEvidencePrompt)
-    .pipe(appendTextResult)
-    .pipe(prepareSummaryPrompt)
     .pipe(generateSummary);
 }
 
