@@ -1,6 +1,9 @@
 <template>
   <!-- <a-layout-content style="padding: 24px; background: #f0f2f5"> -->
-  <a-card title="图片输入模型">
+  <a-card
+    title="图片输入模型"
+    :class="['model-page-card', { dark: isDarkMode }]"
+  >
     <template #extra>
       <a-button type="primary" @click="fetchModels">
         <template #icon><ReloadOutlined /></template>
@@ -10,7 +13,11 @@
 
     <a-row :gutter="16">
       <a-col :span="6">
-        <a-card title="模型列表" style="height: 100%">
+        <a-card
+          title="模型列表"
+          :class="['inner-card', { dark: isDarkMode }]"
+          style="height: 100%"
+        >
           <a-list
             :data-source="hfStore.models"
             :loading="hfStore.loading"
@@ -22,7 +29,9 @@
                   cursor: 'pointer',
                   background:
                     hfStore.selectedModel?.id === item.id
-                      ? '#e6f7ff'
+                      ? isDarkMode
+                        ? '#111827'
+                        : '#e6f7ff'
                       : 'transparent',
                 }"
                 @click="selectModel(item)"
@@ -40,6 +49,7 @@
       <a-col :span="18">
         <a-card
           :title="hfStore.selectedModel?.id || '选择模型'"
+          :class="['inner-card', { dark: isDarkMode }]"
           style="height: 100%"
         >
           <template v-if="hfStore.selectedModel">
@@ -155,7 +165,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onBeforeUnmount } from "vue";
 import { useHfStore } from "@/stores/hf";
 import { ReloadOutlined, PlusOutlined } from "@ant-design/icons-vue";
 import type { UploadFile } from "ant-design-vue";
@@ -170,6 +180,17 @@ interface ImageClassResult {
 const hfStore = useHfStore();
 const fileList = ref<UploadFile[]>([]);
 const MAX_IMAGE_SIZE_MB = 10;
+const isDarkMode = ref(false);
+const THEME_KEY = "myagent-multimodal-theme";
+
+const syncThemeFromStorage = () => {
+  const savedTheme = localStorage.getItem(THEME_KEY);
+  if (savedTheme === "dark") {
+    isDarkMode.value = true;
+  } else if (savedTheme === "light") {
+    isDarkMode.value = false;
+  }
+};
 //处理模型返回的结果，确保兼容不同格式的输出，并提取图片类型和分数
 const parseImageResult = (item: unknown): ImageClassResult[] => {
   const raw =
@@ -277,6 +298,132 @@ const runInference = async () => {
 };
 
 onMounted(() => {
+  syncThemeFromStorage();
+  window.addEventListener("storage", syncThemeFromStorage);
+  window.addEventListener("myagent-theme-changed", syncThemeFromStorage);
   fetchModels();
 });
+
+onBeforeUnmount(() => {
+  window.removeEventListener("storage", syncThemeFromStorage);
+  window.removeEventListener("myagent-theme-changed", syncThemeFromStorage);
+});
 </script>
+
+<style scoped>
+.model-page-card {
+  background: inherit;
+}
+
+.model-page-card.dark {
+  color: #ffffff;
+}
+
+.model-page-card :deep(.ant-card) {
+  background: inherit;
+}
+
+.inner-card {
+  background: inherit;
+}
+
+.inner-card :deep(.ant-card) {
+  background: inherit;
+}
+
+.model-page-card.dark :deep(.ant-card),
+.inner-card.dark :deep(.ant-card) {
+  background: #000000;
+  border-color: #000000;
+  color: #ffffff;
+}
+
+.model-page-card.dark :deep(.ant-card-head),
+.inner-card.dark :deep(.ant-card-head) {
+  background: #000000;
+  border-bottom-color: #000000;
+  color: #ffffff;
+}
+
+.model-page-card.dark :deep(.ant-card-head-title),
+.inner-card.dark :deep(.ant-card-head-title),
+.model-page-card.dark :deep(.ant-list-item-meta-title),
+.inner-card.dark :deep(.ant-list-item-meta-title),
+.model-page-card.dark :deep(.ant-list-item-meta-description),
+.inner-card.dark :deep(.ant-list-item-meta-description),
+.model-page-card.dark :deep(.ant-descriptions-item-label),
+.inner-card.dark :deep(.ant-descriptions-item-label),
+.model-page-card.dark :deep(.ant-descriptions-item-content),
+.inner-card.dark :deep(.ant-descriptions-item-content) {
+  color: #ffffff;
+}
+
+.model-page-card.dark
+  :deep(.ant-descriptions-bordered .ant-descriptions-item-label),
+.inner-card.dark :deep(.ant-descriptions-bordered .ant-descriptions-item-label),
+.model-page-card.dark
+  :deep(.ant-descriptions-bordered .ant-descriptions-item-content),
+.inner-card.dark
+  :deep(.ant-descriptions-bordered .ant-descriptions-item-content) {
+  background: #000000;
+  border-color: #000000;
+  color: #ffffff;
+}
+
+.model-page-card.dark :deep(.ant-divider),
+.inner-card.dark :deep(.ant-divider) {
+  border-color: #000000;
+}
+
+.model-page-card.dark :deep(.ant-btn-default),
+.inner-card.dark :deep(.ant-btn-default),
+.model-page-card.dark :deep(.ant-btn-primary),
+.inner-card.dark :deep(.ant-btn-primary) {
+  color: #ffffff;
+  border-color: #000000;
+}
+
+.model-page-card.dark :deep(.ant-list-item),
+.inner-card.dark :deep(.ant-list-item) {
+  color: #ffffff;
+}
+
+.model-page-card.dark :deep(.ant-empty),
+.inner-card.dark :deep(.ant-empty),
+.model-page-card.dark :deep(.ant-empty-description),
+.inner-card.dark :deep(.ant-empty-description),
+.model-page-card.dark :deep(.ant-result-title),
+.inner-card.dark :deep(.ant-result-title),
+.model-page-card.dark :deep(.ant-result-subtitle),
+.inner-card.dark :deep(.ant-result-subtitle) {
+  color: #ffffff;
+}
+
+.model-page-card.dark :deep(.ant-list),
+.inner-card.dark :deep(.ant-list),
+.model-page-card.dark :deep(.ant-list-bordered),
+.inner-card.dark :deep(.ant-list-bordered),
+.model-page-card.dark :deep(.ant-list-sm),
+.inner-card.dark :deep(.ant-list-sm) {
+  background: #000000;
+  border-color: #000000;
+}
+
+.model-page-card.dark :deep(.ant-upload-select-picture-card),
+.inner-card.dark :deep(.ant-upload-select-picture-card),
+.model-page-card.dark :deep(.ant-upload.ant-upload-select-picture-card),
+.inner-card.dark :deep(.ant-upload.ant-upload-select-picture-card) {
+  background: #000000;
+  border-color: #000000;
+}
+
+.model-page-card.dark
+  :deep(.ant-upload.ant-upload-select-picture-card .ant-upload),
+.inner-card.dark :deep(.ant-upload.ant-upload-select-picture-card .ant-upload) {
+  color: #ffffff;
+}
+
+.model-page-card.dark :deep(img) {
+  border: 1px solid #000000;
+}
+</style>

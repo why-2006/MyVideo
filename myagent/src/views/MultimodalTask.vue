@@ -1,80 +1,102 @@
 <template>
-  <a-card title="多模态协作任务">
-    <a-alert
-      message="对话模式：保留会话历史，支持文本 + 图片/音频资料联合推理。"
-      type="info"
-      show-icon
-      style="margin-bottom: 16px"
-    />
+  <a-card
+    title="多模态协作任务"
+    :class="['multimodal-card', { dark: isDarkMode }]"
+  >
+    <div class="chat-shell">
+      <div ref="chatBodyRef" class="chat-body">
+        <div v-if="chatHistory.length === 0" class="chat-empty">
+          <a-empty description="暂无对话，输入内容后开始推理" />
+        </div>
 
-    <div ref="chatBodyRef" class="chat-body">
-      <div v-if="chatHistory.length === 0" class="chat-empty">
-        <a-empty description="暂无对话，输入内容后开始推理" />
-      </div>
-
-      <div
-        v-for="item in chatHistory"
-        :key="item.id"
-        class="chat-row"
-        :class="item.role"
-      >
-        <div class="chat-bubble">
-          <div class="chat-role">{{ item.roleLabel }}</div>
-          <div class="chat-text">{{ item.text }}</div>
-          <ul v-if="item.attachments.length > 0" class="chat-attachments">
-            <li v-for="asset in item.attachments" :key="asset">{{ asset }}</li>
-          </ul>
-          <div v-if="item.meta" class="chat-meta">
-            耗时 {{ item.meta.durationMs }} ms，成功
-            {{ item.meta.successCount }}，失败
-            {{ item.meta.failureCount }}
+        <div
+          v-for="item in chatHistory"
+          :key="item.id"
+          class="chat-row"
+          :class="item.role"
+        >
+          <div class="chat-bubble">
+            <div class="chat-role">{{ item.roleLabel }}</div>
+            <div class="chat-text">{{ item.text }}</div>
+            <ul v-if="item.attachments.length > 0" class="chat-attachments">
+              <li v-for="asset in item.attachments" :key="asset">
+                {{ asset }}
+              </li>
+            </ul>
+            <div v-if="item.meta" class="chat-meta">
+              耗时 {{ item.meta.durationMs }} ms，成功
+              {{ item.meta.successCount }}，失败
+              {{ item.meta.failureCount }}
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <a-form layout="vertical" class="chat-form">
-      <a-form-item label="输入内容">
+      <div class="composer-wrap">
+        <div class="composer-actions-top-right">
+          <a-tooltip title="清空会话">
+            <a-button
+              type="text"
+              shape="circle"
+              class="icon-btn"
+              @click="clearAll"
+            >
+              <template #icon><DeleteOutlined /></template>
+            </a-button>
+          </a-tooltip>
+
+          <a-upload
+            v-model:file-list="assetFileList"
+            :before-upload="beforeAssetUpload"
+            :max-count="2"
+            :multiple="true"
+            accept="image/*,audio/*"
+          >
+            <a-tooltip title="资料提交（图片/音频）">
+              <a-button type="text" shape="circle" class="icon-btn">
+                <template #icon><UploadOutlined /></template>
+              </a-button>
+            </a-tooltip>
+          </a-upload>
+        </div>
+
         <a-textarea
           v-model:value="textInput"
-          :rows="4"
+          :auto-size="{ minRows: 5, maxRows: 5 }"
+          class="composer-input"
           placeholder="请输入任务描述。Enter 发送，Shift+Enter 换行"
           @keydown="handleInputKeydown"
         />
-      </a-form-item>
 
-      <a-form-item label="资料提交（可选：图片/音频）">
-        <a-upload
-          v-model:file-list="assetFileList"
-          :before-upload="beforeAssetUpload"
-          :max-count="2"
-          :multiple="true"
-          accept="image/*,audio/*"
-        >
-          <a-button>
-            <template #icon><UploadOutlined /></template>
-            资料提交
+        <a-tooltip title="推理">
+          <a-button
+            type="primary"
+            shape="circle"
+            class="icon-btn icon-send"
+            :loading="hfStore.taskLoading"
+            @click="runTask"
+          >
+            <template #icon><SendOutlined /></template>
           </a-button>
-        </a-upload>
-      </a-form-item>
+        </a-tooltip>
 
-      <a-space>
-        <a-button
-          type="primary"
-          :loading="hfStore.taskLoading"
-          @click="runTask"
-        >
-          推理
-        </a-button>
-        <a-button @click="clearAll">清空会话</a-button>
-      </a-space>
-    </a-form>
+        <div v-if="assetFileList.length > 0" class="asset-tags">
+          <a-tag v-for="file in assetFileList" :key="file.uid" color="blue">
+            {{ file.name }}
+          </a-tag>
+        </div>
+      </div>
+    </div>
   </a-card>
 </template>
 
 <script setup lang="ts">
-import { nextTick, onMounted, ref, watch } from "vue";
-import { UploadOutlined } from "@ant-design/icons-vue";
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import {
+  DeleteOutlined,
+  SendOutlined,
+  UploadOutlined,
+} from "@ant-design/icons-vue";
 import type { UploadFile } from "ant-design-vue";
 import { message } from "ant-design-vue";
 import { useHfStore } from "@/stores/hf";
@@ -97,9 +119,11 @@ const textInput = ref("");
 const assetFileList = ref<UploadFile[]>([]);
 const chatBodyRef = ref<HTMLElement | null>(null);
 const chatHistory = ref<ChatMessage[]>([]);
+const isDarkMode = ref(false);
 
 const MAX_IMAGE_SIZE_MB = 10;
 const MAX_AUDIO_SIZE_MB = 20;
+const THEME_KEY = "myagent-multimodal-theme";
 
 const scrollChatToBottom = async () => {
   await nextTick();
@@ -251,6 +275,19 @@ const clearAll = () => {
   hfStore.clearTaskResult();
 };
 
+const syncThemeFromStorage = () => {
+  const savedTheme = localStorage.getItem(THEME_KEY);
+  if (savedTheme === "dark") {
+    isDarkMode.value = true;
+  } else if (savedTheme === "light") {
+    isDarkMode.value = false;
+  } else {
+    isDarkMode.value = window.matchMedia(
+      "(prefers-color-scheme: dark)",
+    ).matches;
+  }
+};
+
 watch(
   () => chatHistory.value.length,
   () => {
@@ -259,19 +296,117 @@ watch(
 );
 
 onMounted(() => {
+  syncThemeFromStorage();
+  window.addEventListener("storage", syncThemeFromStorage);
+  window.addEventListener("myagent-theme-changed", syncThemeFromStorage);
   void scrollChatToBottom();
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("storage", syncThemeFromStorage);
+  window.removeEventListener("myagent-theme-changed", syncThemeFromStorage);
 });
 </script>
 
 <style scoped>
+.multimodal-card {
+  --shell-bg: linear-gradient(160deg, #f9fcff 0%, #f3f7fb 100%);
+  --page-bg: #f3f7fb;
+  --shell-border: #e6edf5;
+  --bubble-bg: #ffffff;
+  --bubble-border: #e8e8e8;
+  --user-bubble-bg: #e7f2ff;
+  --user-bubble-border: #bfdfff;
+  --error-bubble-bg: #fff1f0;
+  --error-bubble-border: #ffccc7;
+  --text-main: #262626;
+  --text-sub: #7a7a7a;
+  --input-bg: rgba(255, 255, 255, 0.48);
+  --input-border: rgba(255, 255, 255, 0.55);
+  --input-shadow: 0 12px 30px rgba(20, 30, 70, 0.2);
+
+  min-height: 0;
+  flex: 1;
+  box-sizing: border-box;
+  padding: 0;
+  border-radius: 12px;
+  background: transparent;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: none;
+  box-shadow: none;
+}
+
+.multimodal-card.dark {
+  --shell-bg: radial-gradient(
+    circle at 25% 20%,
+    #2f3b52 0%,
+    #1d2433 52%,
+    #141a27 100%
+  );
+  --page-bg: #141a27;
+  --shell-border: #3b465d;
+  --bubble-bg: rgba(35, 44, 61, 0.92);
+  --bubble-border: #45516a;
+  --user-bubble-bg: rgba(28, 64, 100, 0.9);
+  --user-bubble-border: #3b6b9f;
+  --error-bubble-bg: rgba(91, 45, 50, 0.9);
+  --error-bubble-border: #9f5c63;
+  --text-main: #e9eef8;
+  --text-sub: #b7c0d1;
+  --input-bg: rgba(22, 28, 41, 0.55);
+  --input-border: rgba(146, 165, 197, 0.26);
+  --input-shadow: 0 14px 36px rgba(3, 8, 20, 0.5);
+}
+
+.multimodal-card :deep(.ant-card) {
+  border: none;
+  background: transparent;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0%;
+  box-shadow: none;
+}
+
+.multimodal-card :deep(.ant-card-head) {
+  border-bottom: none;
+  background: transparent;
+  padding: 0;
+}
+
+.multimodal-card :deep(.ant-card-head-title) {
+  color: var(--text-main);
+}
+
+.multimodal-card :deep(.ant-card-extra) {
+  padding: 0;
+}
+
+.multimodal-card :deep(.ant-card-body) {
+  display: contents;
+}
+
+.chat-shell {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 12px;
+  min-height: 0;
+  padding: 14px;
+  border: 0px solid var(--shell-border);
+  border-radius: 14px;
+  background: transparent;
+  overflow: hidden;
+}
+
 .chat-body {
-  height: 420px;
-  padding: 16px;
-  margin-bottom: 16px;
+  flex: 1;
+  min-height: 240px;
+  padding: 4px;
   overflow-y: auto;
-  border: 1px solid #f0f0f0;
-  border-radius: 8px;
-  background: linear-gradient(180deg, #fcfcfc 0%, #f7fafc 100%);
 }
 
 .chat-empty {
@@ -299,24 +434,25 @@ onMounted(() => {
   max-width: 78%;
   padding: 10px 12px;
   border-radius: 10px;
-  background: #fff;
-  border: 1px solid #e8e8e8;
+  color: var(--text-main);
+  background: var(--bubble-bg);
+  border: 1px solid var(--bubble-border);
 }
 
 .chat-row.user .chat-bubble {
-  background: #e6f4ff;
-  border-color: #b7ddff;
+  background: var(--user-bubble-bg);
+  border-color: var(--user-bubble-border);
 }
 
 .chat-row.error .chat-bubble {
-  background: #fff1f0;
-  border-color: #ffccc7;
+  background: var(--error-bubble-bg);
+  border-color: var(--error-bubble-border);
 }
 
 .chat-role {
   margin-bottom: 4px;
   font-size: 12px;
-  color: #8c8c8c;
+  color: var(--text-sub);
 }
 
 .chat-text {
@@ -332,10 +468,92 @@ onMounted(() => {
 .chat-meta {
   margin-top: 8px;
   font-size: 12px;
-  color: #595959;
+  color: var(--text-sub);
 }
 
-.chat-form {
+.composer-wrap {
+  position: relative;
+  padding-top: 0;
+  box-shadow:
+    0 4px 10px rgba(0, 0, 0, 0.02),
+    0 2px 4px rgba(0, 0, 0, 0.04);
+  border-radius: 16px;
+}
+
+.composer-input {
+  border-radius: 16px;
+  display: block;
+}
+
+.composer-input :deep(.ant-input-textarea) {
+  resize: none !important;
+}
+
+.composer-input :deep(.ant-input) {
+  padding: 44px 56px 44px 18px;
+  color: var(--text-main);
+  border-radius: 16px;
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+  box-shadow: var(--input-shadow);
+  resize: none !important;
+}
+
+.composer-input :deep(textarea.ant-input) {
+  resize: none !important;
+}
+
+.composer-input :deep(.ant-input-textarea textarea) {
+  resize: none !important;
+  min-height: 138px !important;
+  max-height: 138px !important;
+}
+
+.composer-input :deep(textarea.ant-input::-webkit-resizer) {
+  display: none;
+}
+
+.composer-input :deep(.ant-input::placeholder) {
+  color: var(--text-sub);
+}
+
+.icon-btn {
+  position: relative;
+  z-index: 3;
+}
+
+.icon-send {
+  position: absolute;
+  right: 10px;
+  bottom: 14px;
+}
+
+.composer-actions-top-right {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 3;
+}
+
+.composer-actions-top-right :deep(.ant-upload) {
+  display: flex;
+}
+
+.asset-tags {
   margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.hint-row {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--text-sub);
 }
 </style>

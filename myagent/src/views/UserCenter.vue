@@ -1,8 +1,17 @@
 <template>
   <!-- <a-layout-content style="padding: 24px; background: #f0f2f5"> -->
-  <a-card title="User Center" :loading="loading">
+  <a-card
+    :class="['profile-card', { dark: isDarkMode }]"
+    title="个人用户中心"
+    :loading="loading"
+  >
     <template #extra>
-      <a-button danger @click="handleLogout">退出登录</a-button>
+      <a-button
+        :class="['logout-button', { dark: isDarkMode }]"
+        danger
+        @click="handleLogout"
+        >退出登录</a-button
+      >
     </template>
 
     <a-descriptions :column="2" bordered>
@@ -19,44 +28,12 @@
         {{ userStore.profile?.createdAt || "N/A" }}
       </a-descriptions-item>
     </a-descriptions>
-
-    <a-divider />
-
-    <h3>Statistics</h3>
-    <a-row :gutter="16">
-      <a-col :span="6">
-        <a-statistic title="Models Accessed" :value="124" />
-      </a-col>
-      <a-col :span="6">
-        <a-statistic title="Inferences Run" :value="89" />
-      </a-col>
-      <a-col :span="6">
-        <a-statistic title="Favorites" :value="23" />
-      </a-col>
-      <a-col :span="6">
-        <a-statistic title="Storage Used" :value="234" suffix="MB" />
-      </a-col>
-    </a-row>
-
-    <a-divider />
-
-    <h3>Favorite Models</h3>
-    <a-list :data-source="favoriteModels" item-layout="horizontal">
-      <template #renderItem="{ item }">
-        <a-list-item>
-          <a-list-item-meta
-            :title="item.name"
-            :description="item.description"
-          />
-        </a-list-item>
-      </template>
-    </a-list>
   </a-card>
   <!-- </a-layout-content> -->
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onBeforeUnmount } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 import { useUserStore } from "@/stores/user";
@@ -66,12 +43,17 @@ const router = useRouter();
 const authStore = useAuthStore();
 const userStore = useUserStore();
 const loading = ref(false);
+const isDarkMode = ref(false);
+const THEME_KEY = "myagent-multimodal-theme";
 
-const favoriteModels = ref([
-  { name: "gpt2", description: "Pre-trained language model from OpenAI" },
-  { name: "bert-base-uncased", description: "Bert model for English" },
-  { name: "distilbert-base-uncased", description: "Distilled BERT model" },
-]);
+const syncThemeFromStorage = () => {
+  const savedTheme = localStorage.getItem(THEME_KEY);
+  if (savedTheme === "dark") {
+    isDarkMode.value = true;
+  } else if (savedTheme === "light") {
+    isDarkMode.value = false;
+  }
+};
 
 const fetchProfile = async () => {
   if (!authStore.isAuthenticated) return;
@@ -101,6 +83,9 @@ const handleLogout = () => {
 };
 
 onMounted(() => {
+  syncThemeFromStorage();
+  window.addEventListener("storage", syncThemeFromStorage);
+  window.addEventListener("myagent-theme-changed", syncThemeFromStorage);
   if (!authStore.isAuthenticated) {
     router.replace("/login");
     return;
@@ -108,4 +93,53 @@ onMounted(() => {
 
   fetchProfile();
 });
+
+onBeforeUnmount(() => {
+  window.removeEventListener("storage", syncThemeFromStorage);
+  window.removeEventListener("myagent-theme-changed", syncThemeFromStorage);
+});
 </script>
+
+<style scoped>
+.profile-card {
+  background: #ffffff;
+  border-color: #e5e7eb;
+}
+
+.profile-card.dark {
+  background: #000000;
+  border-color: #000000;
+  color: #ffffff;
+}
+
+.profile-card.dark :deep(.ant-card-head) {
+  background: #000000;
+  border-bottom-color: #000000;
+  color: #ffffff;
+}
+
+.profile-card.dark :deep(.ant-card-head-title),
+.profile-card.dark :deep(.ant-descriptions-item-label),
+.profile-card.dark :deep(.ant-descriptions-item-content) {
+  color: #ffffff;
+}
+
+.profile-card.dark
+  :deep(.ant-descriptions-bordered .ant-descriptions-item-label),
+.profile-card.dark
+  :deep(.ant-descriptions-bordered .ant-descriptions-item-content) {
+  background: #000000;
+  border-color: #000000;
+  color: #ffffff;
+}
+
+.profile-card.dark :deep(.ant-divider) {
+  border-color: #000000;
+}
+
+.logout-button.dark {
+  background: #000000;
+  border-color: #000000;
+  color: #ffffff;
+}
+</style>
