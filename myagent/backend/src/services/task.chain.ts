@@ -43,7 +43,7 @@ interface ChainContext {
   userId: string;
   input: TaskInput;
   modalityResults: ModalityResult[];
-  summaryPrompt?: string;
+  // summaryPrompt?: string;
   evidencePrompt?: string;
   historyPrompt?: string;
 }
@@ -166,9 +166,11 @@ function buildGroundedQaPrompt(
   return [
     "你是一个多模态问答助手。",
     "请严格根据给定证据回答用户问题，不要臆测。",
-    "回答优先级：当前多模态证据 > 历史记忆 > 常识。",
-    "若不能从历史记忆中获取有用信息则不要提及。",
-    "若证据不足或相关模态失败，请明确说明不确定性。",
+    "回答优先级：当前用户问题 > 多模态证据 > 历史记忆 > 常识。",
+    "多模态证据中的图像推理结果若出现多个可能内容,请根据给出的core选取最大的回答",
+    "若不能从历史记忆中获取有用信息则忽略历史记忆并且不要提及。",
+    "若不能从多模态证据中获取有用信息则忽略多模态证据并且不要提及。",
+    "若相关模态失败，请明确说明不确定性。",
     "不要编造历史中不存在的细节。",
     "",
     `用户问题: ${userQuestion}`,

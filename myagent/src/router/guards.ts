@@ -7,11 +7,10 @@ export function authGuard(
   next: NavigationGuardNext,
 ) {
   const authStore = useAuthStore();
+  const sessionValid = authStore.ensureValidSession();
   //如果用户已认证但试图访问登录或注册页，则重定向到之前的页面或主页
-  if (
-    authStore.isAuthenticated &&
-    (to.path === "/login" || to.path === "/register")
-  ) {
+  if (sessionValid && (to.path === "/login" || to.path === "/register")) {
+    //尝试从查询参数中获取重定向路径
     const redirect =
       typeof to.query.redirect === "string" ? to.query.redirect : undefined;
     //确保重定向路径合法且不指向登录或注册页
@@ -29,7 +28,7 @@ export function authGuard(
     return;
   }
   //如果目标路由需要认证但用户未认证，则重定向到登录页，并携带原目标路径以便登录后重定向回去
-  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+  if (to.meta.requiresAuth && !sessionValid) {
     next({
       path: "/login",
       query: { redirect: to.fullPath },

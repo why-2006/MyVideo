@@ -33,55 +33,64 @@
       </div>
 
       <div class="composer-wrap">
-        <div class="composer-actions-top-right">
-          <a-tooltip title="清空会话">
-            <a-button
-              type="text"
-              shape="circle"
-              class="icon-btn"
-              @click="clearAll"
-            >
-              <template #icon><DeleteOutlined /></template>
-            </a-button>
-          </a-tooltip>
-
-          <a-upload
-            v-model:file-list="assetFileList"
-            :before-upload="beforeAssetUpload"
-            :max-count="2"
-            :multiple="true"
-            accept="image/*,audio/*"
-          >
-            <a-tooltip title="资料提交（图片/音频）">
-              <a-button type="text" shape="circle" class="icon-btn">
-                <template #icon><UploadOutlined /></template>
+        <div class="composer-main">
+          <div class="composer-actions-top-right">
+            <a-tooltip title="清空会话">
+              <a-button
+                type="text"
+                shape="circle"
+                class="icon-btn"
+                @click="clearAll"
+              >
+                <template #icon><DeleteOutlined /></template>
               </a-button>
             </a-tooltip>
-          </a-upload>
+
+            <a-upload
+              v-model:file-list="assetFileList"
+              :before-upload="beforeAssetUpload"
+              :max-count="2"
+              :multiple="true"
+              :show-upload-list="false"
+              accept="image/*,audio/*"
+            >
+              <a-tooltip title="资料提交（图片/音频）">
+                <a-button type="text" shape="circle" class="icon-btn">
+                  <template #icon><UploadOutlined /></template>
+                </a-button>
+              </a-tooltip>
+            </a-upload>
+          </div>
+
+          <a-textarea
+            v-model:value="textInput"
+            :auto-size="{ minRows: 5, maxRows: 5 }"
+            class="composer-input"
+            placeholder="请输入任务描述。Enter 发送，Shift+Enter 换行"
+            @keydown="handleInputKeydown"
+          />
+
+          <a-tooltip title="推理">
+            <a-button
+              type="primary"
+              shape="circle"
+              class="icon-btn icon-send"
+              :loading="hfStore.taskLoading"
+              @click="runTask"
+            >
+              <template #icon><SendOutlined /></template>
+            </a-button>
+          </a-tooltip>
         </div>
 
-        <a-textarea
-          v-model:value="textInput"
-          :auto-size="{ minRows: 5, maxRows: 5 }"
-          class="composer-input"
-          placeholder="请输入任务描述。Enter 发送，Shift+Enter 换行"
-          @keydown="handleInputKeydown"
-        />
-
-        <a-tooltip title="推理">
-          <a-button
-            type="primary"
-            shape="circle"
-            class="icon-btn icon-send"
-            :loading="hfStore.taskLoading"
-            @click="runTask"
-          >
-            <template #icon><SendOutlined /></template>
-          </a-button>
-        </a-tooltip>
-
         <div v-if="assetFileList.length > 0" class="asset-tags">
-          <a-tag v-for="file in assetFileList" :key="file.uid" color="blue">
+          <a-tag
+            v-for="file in assetFileList"
+            :key="file.uid"
+            color="blue"
+            closable
+            @close="removeAsset(file.uid, $event)"
+          >
             {{ file.name }}
           </a-tag>
         </div>
@@ -273,6 +282,11 @@ const clearAll = () => {
   assetFileList.value = [];
   chatHistory.value = [];
   hfStore.clearTaskResult();
+};
+
+const removeAsset = (uid: string, event?: Event) => {
+  event?.preventDefault();
+  assetFileList.value = assetFileList.value.filter((file) => file.uid !== uid);
 };
 
 const syncThemeFromStorage = () => {
@@ -473,6 +487,14 @@ onBeforeUnmount(() => {
 
 .composer-wrap {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding-bottom: 34px;
+}
+
+.composer-main {
+  position: relative;
   padding-top: 0;
   box-shadow:
     0 4px 10px rgba(0, 0, 0, 0.02),
@@ -545,10 +567,14 @@ onBeforeUnmount(() => {
 }
 
 .asset-tags {
-  margin-top: 8px;
+  position: absolute;
+  right: 8px;
+  bottom: 0;
   display: flex;
   flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 6px;
+  max-width: 78%;
 }
 
 .hint-row {

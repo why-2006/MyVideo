@@ -44,7 +44,7 @@ export async function login(req: Request, res: Response, next: NextFunction) {
     };
 
     const accessToken = jwtService.generateToken(tokenPayload);
-    const refreshToken = jwtService.generateToken(tokenPayload);
+    const refreshToken = jwtService.generateRefreshToken(tokenPayload);
 
     res.json({
       success: true,
@@ -100,7 +100,7 @@ export async function register(
     };
 
     const accessToken = jwtService.generateToken(tokenPayload);
-    const refreshToken = jwtService.generateToken(tokenPayload);
+    const refreshToken = jwtService.generateRefreshToken(tokenPayload);
 
     res.status(201).json({
       success: true,

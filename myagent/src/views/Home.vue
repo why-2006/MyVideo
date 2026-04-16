@@ -23,7 +23,7 @@ import { onBeforeUnmount, onMounted, ref } from "vue";
 
 const isDarkMode = ref(false);
 const THEME_KEY = "myagent-multimodal-theme";
-
+//设置主题
 const syncThemeFromStorage = () => {
   const savedTheme = localStorage.getItem(THEME_KEY);
   if (savedTheme === "dark") {
@@ -32,7 +32,7 @@ const syncThemeFromStorage = () => {
     isDarkMode.value = false;
   }
 };
-
+//监听主题变化
 onMounted(() => {
   syncThemeFromStorage();
   window.addEventListener("storage", syncThemeFromStorage);

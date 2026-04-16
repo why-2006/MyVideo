@@ -99,7 +99,6 @@ const props = withDefaults(
   defineProps<{
     headerMenuItems?: MenuItem[];
     siderMenuItems?: MenuItem[];
-    // breadcrumbItems?: string[];
     showSider?: boolean;
     selectedHeaderKey?: string;
     selectedSiderKey?: string;
@@ -107,7 +106,6 @@ const props = withDefaults(
   {
     headerMenuItems: () => [],
     siderMenuItems: () => [],
-    // breadcrumbItems: () => ["Home", "List", "App"],
     showSider: true,
     selectedHeaderKey: "",
     selectedSiderKey: "",

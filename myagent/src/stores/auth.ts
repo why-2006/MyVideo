@@ -18,6 +18,17 @@ function decodeJwtPayload(token: string): Record<string, unknown> | null {
     return null;
   }
 }
+
+function isAccessTokenExpired(token: string, nowMs: number): boolean {
+  const payload = decodeJwtPayload(token);
+  const exp = payload?.exp;
+  if (typeof exp !== "number") {
+    return true;
+  }
+
+  return exp * 1000 <= nowMs;
+}
+
 //从localStorage读取用户信息，解析为TokenPayload对象，如果解析失败则返回null
 function readStoredUser(): TokenPayload | null {
   const raw = localStorage.getItem("user_profile");
@@ -41,10 +52,25 @@ export const useAuthStore = defineStore("auth", () => {
   const user = ref<TokenPayload | null>(readStoredUser());
   const loading = ref(false);
   const error = ref<string | null>(null);
+  const nowMs = ref(Date.now());
+
+  if (typeof window !== "undefined") {
+    setInterval(() => {
+      nowMs.value = Date.now();
+    }, 30000);
+  }
 
   // Getters
-  const isAuthenticated = computed(() => !!accessToken.value);
-  const isTokenValid = computed(() => !!accessToken.value && !!user.value);
+  const hasValidAccessToken = computed(() => {
+    if (!accessToken.value) {
+      return false;
+    }
+    return !isAccessTokenExpired(accessToken.value, nowMs.value);
+  });
+  const isAuthenticated = computed(() => hasValidAccessToken.value);
+  const isTokenValid = computed(
+    () => hasValidAccessToken.value && !!user.value,
+  );
 
   // Actions
   const setTokens = (newAccessToken: string, newRefreshToken: string) => {
@@ -73,6 +99,22 @@ export const useAuthStore = defineStore("auth", () => {
     localStorage.removeItem("refresh_token");
     localStorage.removeItem("user_profile");
   };
+
+  const ensureValidSession = () => {
+    if (!accessToken.value) {
+      return false;
+    }
+
+    if (isAccessTokenExpired(accessToken.value, Date.now())) {
+      clearAuth();
+      return false;
+    }
+
+    return true;
+  };
+
+  ensureValidSession();
+
   //应用启动时尝试从现有 access token 中恢复用户信息，以支持页面刷新后保持登录状态
   if (!user.value && accessToken.value) {
     const payload = decodeJwtPayload(accessToken.value);
@@ -138,6 +180,7 @@ export const useAuthStore = defineStore("auth", () => {
     error,
     isAuthenticated,
     isTokenValid,
+    ensureValidSession,
     setTokens,
     setUser,
     updateUser,
