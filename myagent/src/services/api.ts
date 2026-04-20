@@ -66,27 +66,6 @@ apiClient.interceptors.response.use(
 
 export default apiClient;
 
-// 用户相关 API
-export const userApi = {
-  async getProfile() {
-    const response = await apiClient.get("/auth/profile");
-    return response.data;
-  },
-
-  async updateProfile(profileData: { name?: string; email?: string }) {
-    const response = await apiClient.put("/auth/profile", profileData);
-    return response.data;
-  },
-
-  async changePassword(passwordData: {
-    currentPassword: string;
-    newPassword: string;
-  }) {
-    const response = await apiClient.put("/auth/change-password", passwordData);
-    return response.data;
-  },
-};
-
 // 文件处理工具
 export const fileUtils = {
   async compressImage(

@@ -37,7 +37,6 @@ import { ref, onMounted, onBeforeUnmount } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 import { useUserStore } from "@/stores/user";
-import { userApi } from "@/services/api";
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -60,11 +59,6 @@ const fetchProfile = async () => {
 
   loading.value = true;
   try {
-    const response = await userApi.getProfile();
-    userStore.setProfile(response.data);
-  } catch (error) {
-    console.error("Failed to fetch profile:", error);
-    // 如果API不存在，使用模拟数据
     userStore.setProfile({
       id: authStore.user?.id || "1",
       name: authStore.user?.name || "Test User",
